@@ -124,3 +124,38 @@ CREATE POLICY "Users can perform all actions on their own pending_reports"
             AND students.user_id = auth.uid()
         )
     );
+
+-- =====================================================================
+-- LANGKAH C: SETUP RLS POLICIES UNTUK APP_SETTINGS (GLOBAL CONFIG)
+-- =====================================================================
+
+-- Aktifkan RLS pada app_settings jika belum aktif
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+
+-- Drop Policy lama jika ada
+DROP POLICY IF EXISTS "Allow authenticated users to read app_settings" ON public.app_settings;
+DROP POLICY IF EXISTS "Allow authenticated users to insert app_settings" ON public.app_settings;
+DROP POLICY IF EXISTS "Allow authenticated users to update app_settings" ON public.app_settings;
+DROP POLICY IF EXISTS "Allow authenticated users to delete app_settings" ON public.app_settings;
+
+-- Buat policy agar user yang login (authenticated) bisa membaca dan menulis pengaturan
+CREATE POLICY "Allow authenticated users to read app_settings"
+    ON public.app_settings FOR SELECT TO authenticated
+    USING (true);
+
+CREATE POLICY "Allow authenticated users to insert app_settings"
+    ON public.app_settings FOR INSERT TO authenticated
+    WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to update app_settings"
+    ON public.app_settings FOR UPDATE TO authenticated
+    USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to delete app_settings"
+    ON public.app_settings FOR DELETE TO authenticated
+    USING (true);
+
+-- Catatan: Untuk Setup Storage Bucket 'reports', silakan lakukan langsung melalui GUI Dashboard Supabase Anda
+-- karena alasan keamanan, role default postgres di SQL Editor dilarang mengubah tabel skema storage secara langsung.
+
+

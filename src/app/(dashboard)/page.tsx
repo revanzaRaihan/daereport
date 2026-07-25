@@ -528,6 +528,21 @@ export default function LaporanBuilderPage() {
               />
             </div>
 
+            {/* Optional Image Upload */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
+                Lampirkan Foto Progres (Opsional)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-2.5 text-xs text-slate-500 focus:outline-none file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wider file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer"
+              />
+            </div>
+
           </div>
 
           {/* Card Footer: Generate trigger Button */}
@@ -620,21 +635,7 @@ export default function LaporanBuilderPage() {
                     className="w-full flex-1 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 text-xs text-slate-700 font-mono leading-relaxed focus:outline-none focus:border-blue-400 resize-y"
                   />
                 </div>
-
-                {/* Optional Image Upload */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    Lampirkan Foto Laporan (Opsional)
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    ref={fileInputRef}
-                    onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
-                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-2.5 text-xs text-slate-500 focus:outline-none file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wider file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer"
-                  />
-                </div>
+                {/* Placeholder empty gap */}
               </div>
             )}
           </div>
