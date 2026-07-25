@@ -296,25 +296,23 @@ export default function StudentsAndSchedulesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-            <GraduationCap className="w-8 h-8 text-indigo-400" />
-            Kelola Murid & Jadwal
-          </h1>
-          <p className="text-slate-400 mt-1 text-sm">
-            Atur data murid les privat Anda dan sesuaikan jadwal belajarnya.
-          </p>
+      {/* Primary Content Header (Height: 64px, flex items-center justify-between) */}
+      <div className="h-16 flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight">Kelola Murid & Jadwal</h2>
+          <div className="h-4 w-px bg-[#E2E8F0]" />
+          <span className="text-sm font-medium text-slate-500">
+            {activeTab === 'students' ? `${students.length} Murid` : `${schedules.length} Jadwal`}
+          </span>
         </div>
 
         {/* Tab Buttons & Add Button */}
-        <div className="flex items-center gap-3 self-start sm:self-center">
-          <div className="bg-slate-900 border border-slate-800 p-1 rounded-xl flex gap-1 text-sm font-medium">
+        <div className="flex items-center gap-3">
+          <div className="bg-[#EFF6FF] border border-blue-100 p-1 rounded-xl flex gap-1 text-xs font-semibold">
             <button
               onClick={() => setActiveTab('students')}
               className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'students' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                activeTab === 'students' ? 'bg-blue-600 text-white font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Daftar Murid
@@ -322,7 +320,7 @@ export default function StudentsAndSchedulesPage() {
             <button
               onClick={() => setActiveTab('schedules')}
               className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'schedules' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                activeTab === 'schedules' ? 'bg-blue-600 text-white font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Jadwal Les
@@ -331,7 +329,7 @@ export default function StudentsAndSchedulesPage() {
 
           <button
             onClick={() => activeTab === 'students' ? handleOpenStudentModal() : handleOpenScheduleModal()}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-lg shadow-indigo-600/10 cursor-pointer text-sm"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-blue-200/50 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah</span>
@@ -341,21 +339,21 @@ export default function StudentsAndSchedulesPage() {
 
       {/* Messages */}
       {successMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm px-4 py-3 rounded-xl flex gap-2">
-          <Check className="w-5 h-5 mt-0.5 flex-shrink-0" />
-          <span className="font-medium">{successMsg}</span>
+        <div className="bg-green-50 border border-green-100 text-green-800 text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-card font-medium">
+          <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-500" />
+          <span>{successMsg}</span>
         </div>
       )}
       {errorMsg && (
-        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm px-4 py-3 rounded-xl flex gap-2">
-          <X className="w-5 h-5 mt-0.5 flex-shrink-0" />
-          <span className="font-medium">{errorMsg}</span>
+        <div className="bg-red-50 border border-red-100 text-red-800 text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-card font-medium">
+          <X className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-500" />
+          <span>{errorMsg}</span>
         </div>
       )}
 
       {loading ? (
         <div className="h-64 flex justify-center items-center">
-          <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+          <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
         </div>
       ) : (
         <>
@@ -364,27 +362,27 @@ export default function StudentsAndSchedulesPage() {
             <div className="space-y-4">
               {/* Search Bar */}
               <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Cari murid atau mata pelajaran..."
+                  placeholder="Cari nama murid atau mata pelajaran..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full bg-white border border-[#E2E8F0] rounded-xl py-2.5 pl-10 pr-4 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors shadow-card"
                 />
               </div>
 
               {filteredStudents.length === 0 ? (
-                <div className="border border-dashed border-slate-800 rounded-2xl p-12 text-center text-slate-500">
-                  <Users className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-                  <p className="font-semibold text-sm">Belum Ada Data Murid</p>
-                  <p className="text-xs opacity-75 mt-1">Silakan klik tombol Tambah untuk membuat murid baru.</p>
+                <div className="border border-dashed border-[#E2E8F0] bg-white rounded-2xl p-12 text-center text-slate-400 shadow-card">
+                  <Users className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                  <p className="font-bold text-sm text-slate-700">Belum Ada Data Murid</p>
+                  <p className="text-xs text-slate-400 mt-1">Silakan klik tombol Tambah untuk mendaftarkan murid baru.</p>
                 </div>
               ) : (
-                <div className="bg-slate-900/30 border border-slate-900 rounded-2xl overflow-hidden backdrop-blur-sm">
+                <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-card">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-slate-900 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-950/40">
+                      <tr className="border-b border-[#E2E8F0] text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50">
                         <th className="p-4">Nama Murid</th>
                         <th className="p-4">Mata Pelajaran / Kelas</th>
                         <th className="p-4">Tanggal Mulai</th>
@@ -392,28 +390,30 @@ export default function StudentsAndSchedulesPage() {
                         <th className="p-4 text-right">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-900 text-sm">
+                    <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                       {filteredStudents.map((s) => (
-                        <tr key={s.id} className="hover:bg-slate-900/40 transition-colors">
-                          <td className="p-4 font-bold text-white">{s.name}</td>
-                          <td className="p-4 text-slate-300">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium rounded-lg">
+                        <tr key={s.id} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="p-4 font-bold text-slate-900">{s.name}</td>
+                          <td className="p-4">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-100 text-blue-600 text-xs font-semibold rounded-xl">
                               <BookOpen className="w-3.5 h-3.5" />
                               {s.subject}
                             </span>
                           </td>
-                          <td className="p-4 text-slate-400">{s.first_meeting_date || '-'}</td>
-                          <td className="p-4 text-center font-semibold text-white">{s.meeting_count || 0}</td>
-                          <td className="p-4 text-right space-x-2">
+                          <td className="p-4 text-slate-500 font-mono text-xs">{s.first_meeting_date || '-'}</td>
+                          <td className="p-4 text-center font-bold text-slate-800 font-mono">{s.meeting_count || 0}</td>
+                          <td className="p-4 text-right space-x-1.5">
                             <button
                               onClick={() => handleOpenStudentModal(s)}
-                              className="text-slate-400 hover:text-white p-1 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                              className="text-slate-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                              title="Edit"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteStudent(s.id)}
-                              className="text-rose-400 hover:text-rose-300 p-1 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                              className="text-rose-400 hover:text-rose-600 p-1.5 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              title="Hapus"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -431,15 +431,14 @@ export default function StudentsAndSchedulesPage() {
           {activeTab === 'schedules' && (
             <div>
               {schedules.length === 0 ? (
-                <div className="border border-dashed border-slate-800 rounded-2xl p-12 text-center text-slate-500">
-                  <Calendar className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-                  <p className="font-semibold text-sm">Belum Ada Jadwal Belajar</p>
-                  <p className="text-xs opacity-75 mt-1">Klik tombol Tambah untuk membuat jadwal belajar dan menugaskannya ke murid.</p>
+                <div className="border border-dashed border-[#E2E8F0] bg-white rounded-2xl p-12 text-center text-slate-400 shadow-card">
+                  <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                  <p className="font-bold text-sm text-slate-700">Belum Ada Jadwal Belajar</p>
+                  <p className="text-xs text-slate-400 mt-1">Klik tombol Tambah untuk membuat jadwal belajar dan menugaskannya ke murid.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {schedules.map((sched) => {
-                    // Match assigned student names
                     const assignedStudents = (sched.schedule_student || [])
                       .map((rel: any) => students.find(s => s.id === rel.student_id)?.name)
                       .filter(Boolean)
@@ -447,50 +446,50 @@ export default function StudentsAndSchedulesPage() {
                     return (
                       <div 
                         key={sched.id} 
-                        className="bg-slate-900/40 border border-slate-900 rounded-2xl p-5 hover:border-slate-800/80 transition-all flex flex-col justify-between"
+                        className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-card hover:border-blue-300 transition-all duration-200 flex flex-col justify-between"
                       >
                         <div className="space-y-3">
                           <div className="flex items-start justify-between">
-                            <div className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs px-3 py-1.5 rounded-lg font-bold">
+                            <span className="px-2.5 py-1 bg-blue-50 border border-blue-100 text-blue-700 text-[10px] font-extrabold uppercase tracking-widest rounded-xl">
                               {DAYS_MAP[sched.day_of_week]}
-                            </div>
-                            <div className="flex gap-1.5">
+                            </span>
+                            <div className="flex gap-1">
                               <button
                                 onClick={() => handleOpenScheduleModal(sched)}
-                                className="text-slate-400 hover:text-white p-1 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                                className="text-slate-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                               >
-                                <Edit2 className="w-4 h-4" />
+                                <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteSchedule(sched.id)}
-                                className="text-rose-400 hover:text-rose-300 p-1 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                                className="text-rose-400 hover:text-rose-600 p-1.5 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>
 
                           <div className="space-y-1">
-                            <div className="flex items-center gap-1.5 text-white font-bold text-base">
-                              <Clock className="w-4 h-4 text-indigo-400" />
+                            <div className="flex items-center gap-1.5 text-slate-900 font-extrabold text-base font-mono">
+                              <Clock className="w-4 h-4 text-blue-600" />
                               {sched.start_time.substring(0, 5)} - {sched.end_time.substring(0, 5)}
                             </div>
-                            {sched.label && <p className="text-xs text-slate-500 font-medium">{sched.label}</p>}
+                            {sched.label && <p className="text-xs text-slate-400 font-medium">{sched.label}</p>}
                           </div>
                         </div>
 
-                        <div className="mt-5 pt-4 border-t border-slate-950/60">
-                          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-2">
+                        <div className="mt-5 pt-4 border-t border-slate-100">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
                             Murid Terdaftar ({assignedStudents.length})
                           </span>
                           {assignedStudents.length === 0 ? (
-                            <span className="text-xs text-slate-600 italic">Belum ada murid ditugaskan</span>
+                            <span className="text-xs text-slate-400 italic">Belum ada murid ditugaskan</span>
                           ) : (
                             <div className="flex flex-wrap gap-1.5">
                               {assignedStudents.map((name: string, i: number) => (
                                 <span 
                                   key={i} 
-                                  className="px-2 py-1 bg-slate-950/80 border border-slate-900 text-slate-300 text-xs font-semibold rounded-md"
+                                  className="px-2.5 py-1 bg-slate-50 border border-slate-100 text-slate-600 text-xs font-semibold rounded-lg"
                                 >
                                   {name}
                                 </span>
@@ -510,22 +509,22 @@ export default function StudentsAndSchedulesPage() {
 
       {/* STUDENT MODAL */}
       {showStudentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+          <div className="w-full max-w-lg bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-2xl relative">
             <button 
               onClick={() => setShowStudentModal(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-white"
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-lg font-bold text-white mb-6">
+            <h3 className="text-base font-bold text-slate-900 mb-6">
               {editingStudent ? 'Edit Data Murid' : 'Tambah Murid Baru'}
             </h3>
 
             <form onSubmit={handleStudentSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                   Nama Murid
                 </label>
                 <input
@@ -534,12 +533,12 @@ export default function StudentsAndSchedulesPage() {
                   value={studentName}
                   onChange={(e) => setStudentName(e.target.value)}
                   placeholder="Contoh: Renziro"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                   Mata Pelajaran / Kelas
                 </label>
                 <input
@@ -548,25 +547,25 @@ export default function StudentsAndSchedulesPage() {
                   value={studentSubject}
                   onChange={(e) => setStudentSubject(e.target.value)}
                   placeholder="Contoh: Scratch Level 1"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                    Tanggal Pertemuan Pertama
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                    Mulai Pertemuan Pertama
                   </label>
                   <input
                     type="date"
                     value={studentFirstMeeting}
                     onChange={(e) => setStudentFirstMeeting(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                     Jumlah Meeting
                   </label>
                   <input
@@ -575,23 +574,23 @@ export default function StudentsAndSchedulesPage() {
                     required
                     value={studentMeetingCount}
                     onChange={(e) => setStudentMeetingCount(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 flex justify-end gap-3">
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowStudentModal(false)}
-                  className="bg-slate-950 border border-slate-800 hover:bg-slate-900 text-slate-300 font-medium px-4 py-2.5 rounded-xl cursor-pointer text-sm"
+                  className="bg-white border border-[#E2E8F0] hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2.5 rounded-xl cursor-pointer text-xs uppercase tracking-wider"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white font-medium px-5 py-2.5 rounded-xl flex items-center gap-1 shadow-lg shadow-indigo-600/10 cursor-pointer text-sm"
+                  className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-blue-200/50 cursor-pointer text-xs uppercase tracking-wider"
                 >
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>Simpan Data</span>
@@ -604,28 +603,28 @@ export default function StudentsAndSchedulesPage() {
 
       {/* SCHEDULE MODAL */}
       {showScheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+          <div className="w-full max-w-lg bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-2xl relative">
             <button 
               onClick={() => setShowScheduleModal(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-white"
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-lg font-bold text-white mb-6">
+            <h3 className="text-base font-bold text-slate-900 mb-6">
               {editingSchedule ? 'Edit Jadwal Belajar' : 'Tambah Jadwal Baru'}
             </h3>
 
             <form onSubmit={handleScheduleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                   Hari Belajar
                 </label>
                 <select
                   value={schedDay}
                   onChange={(e) => setSchedDay(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors font-semibold"
                 >
                   {Object.entries(DAYS_MAP).map(([key, name]) => (
                     <option key={key} value={key}>{name}</option>
@@ -635,7 +634,7 @@ export default function StudentsAndSchedulesPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                     Jam Mulai
                   </label>
                   <input
@@ -643,12 +642,12 @@ export default function StudentsAndSchedulesPage() {
                     required
                     value={schedStart}
                     onChange={(e) => setSchedStart(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                     Jam Selesai
                   </label>
                   <input
@@ -656,13 +655,13 @@ export default function StudentsAndSchedulesPage() {
                     required
                     value={schedEnd}
                     onChange={(e) => setSchedEnd(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                   Label Info (Opsional)
                 </label>
                 <input
@@ -670,18 +669,18 @@ export default function StudentsAndSchedulesPage() {
                   value={schedLabel}
                   onChange={(e) => setSchedLabel(e.target.value)}
                   placeholder="Contoh: Jam Les Sore / Kelas Weekend"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                   Pilih Murid Untuk Jadwal Ini
                 </label>
                 {students.length === 0 ? (
-                  <p className="text-slate-500 text-xs italic">Harap tambahkan murid terlebih dahulu.</p>
+                  <p className="text-slate-400 text-xs italic">Harap tambahkan murid terlebih dahulu.</p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2 mt-2 bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-36 overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-2 mt-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 max-h-36 overflow-y-auto">
                     {students.map(s => {
                       const isSelected = schedStudentIds.includes(s.id)
                       return (
@@ -690,13 +689,13 @@ export default function StudentsAndSchedulesPage() {
                           key={s.id}
                           onClick={() => toggleStudentSelection(s.id)}
                           className={`
-                            flex items-center gap-2 p-2 rounded-lg text-xs font-semibold text-left transition-colors cursor-pointer
+                            flex items-center gap-2 p-2 rounded-lg text-xs font-semibold text-left transition-colors cursor-pointer border
                             ${isSelected 
-                              ? 'bg-indigo-600/25 border border-indigo-500 text-white' 
-                              : 'bg-slate-900 border border-slate-950 text-slate-400 hover:text-slate-200 hover:border-slate-800'}
+                              ? 'bg-blue-50 border-blue-200 text-blue-600' 
+                              : 'bg-white border-transparent text-slate-600 hover:text-slate-900'}
                           `}
                         >
-                          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${isSelected ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-slate-700'}`}>
+                          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white'}`}>
                             {isSelected && <Check className="w-2.5 h-2.5" />}
                           </div>
                           <span className="truncate">{s.name}</span>
@@ -707,18 +706,18 @@ export default function StudentsAndSchedulesPage() {
                 )}
               </div>
 
-              <div className="pt-4 flex justify-end gap-3">
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowScheduleModal(false)}
-                  className="bg-slate-950 border border-slate-800 hover:bg-slate-900 text-slate-300 font-medium px-4 py-2.5 rounded-xl cursor-pointer text-sm"
+                  className="bg-white border border-[#E2E8F0] hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2.5 rounded-xl cursor-pointer text-xs uppercase tracking-wider"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white font-medium px-5 py-2.5 rounded-xl flex items-center gap-1 shadow-lg shadow-indigo-600/10 cursor-pointer text-sm"
+                  className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-blue-200/50 cursor-pointer text-xs uppercase tracking-wider"
                 >
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>Simpan Jadwal</span>
@@ -731,3 +730,4 @@ export default function StudentsAndSchedulesPage() {
     </div>
   )
 }
+

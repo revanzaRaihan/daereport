@@ -149,54 +149,52 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-          <Settings className="w-8 h-8 text-indigo-400" />
-          Pengaturan
-        </h1>
-        <p className="text-slate-400 mt-1 text-sm">
-          Konfigurasi penyedia AI (Gemini/Groq), API Key, dan preferensi aplikasi.
-        </p>
+      {/* Primary Content Header (Height: 64px, flex items-center justify-between) */}
+      <div className="h-16 flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight">Pengaturan Sistem</h2>
+          <div className="h-4 w-px bg-[#E2E8F0]" />
+          <span className="text-sm font-medium text-slate-500">Konfigurasi</span>
+        </div>
       </div>
 
       {/* Messages */}
       {successMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm px-4 py-3 rounded-xl flex gap-2">
-          <Check className="w-5 h-5 mt-0.5 flex-shrink-0" />
-          <span className="font-medium">{successMsg}</span>
+        <div className="bg-green-50 border border-green-100 text-green-800 text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-card font-medium">
+          <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-500" />
+          <span>{successMsg}</span>
         </div>
       )}
       {errorMsg && (
-        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm px-4 py-3 rounded-xl flex gap-2">
-          <X className="w-5 h-5 mt-0.5 flex-shrink-0" />
-          <span className="font-medium">{errorMsg}</span>
+        <div className="bg-red-50 border border-red-100 text-red-800 text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-card font-medium">
+          <X className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-500" />
+          <span>{errorMsg}</span>
         </div>
       )}
 
       {loading ? (
         <div className="h-64 flex justify-center items-center">
-          <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+          <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
         </div>
       ) : (
-        <form onSubmit={handleSave} className="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 space-y-6 backdrop-blur-sm">
+        <form onSubmit={handleSave} className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-6 shadow-card transition-all duration-200 hover:border-blue-200">
           
           {/* AI Settings Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-850">
+            <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-slate-100">
               <Sparkles className="w-4 h-4" />
               Kredensial Kecerdasan Buatan (AI)
             </h3>
 
             {/* Provider Select */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                 Penyedia Model AI (Provider)
               </label>
               <select
                 value={provider}
                 onChange={(e) => handleProviderChange(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors font-semibold"
               >
                 <option value="gemini">Google Gemini AI</option>
                 <option value="groq">Groq Cloud API</option>
@@ -205,13 +203,13 @@ export default function SettingsPage() {
 
             {/* Model Select */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                 Model AI yang Digunakan
               </label>
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors font-semibold"
               >
                 {modelOptions.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -221,7 +219,7 @@ export default function SettingsPage() {
 
             {/* API Key Input */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                 <Key className="w-3.5 h-3.5 text-slate-400" />
                 API Key
               </label>
@@ -231,17 +229,17 @@ export default function SettingsPage() {
                   value={apiKey}
                   onChange={(e) => handleKeyChange(e.target.value)}
                   placeholder={provider === 'gemini' ? 'AIzaSy...' : 'gsk_...'}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-4 pr-12 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors font-mono"
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl py-3 pl-4 pr-12 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
                 >
-                  {showKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
+              <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed font-medium">
                 Kredensial API Key ini disimpan aman di database server Supabase Anda dan tidak pernah dipublikasikan keluar.
               </p>
             </div>
@@ -249,20 +247,20 @@ export default function SettingsPage() {
 
           {/* System settings Section */}
           <div className="space-y-4 pt-4">
-            <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-850">
+            <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-slate-100">
               <Languages className="w-4 h-4" />
               Sistem & Kontak
             </h3>
 
             {/* Locale */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                 Bahasa Default Dashboard
               </label>
               <select
                 value={locale}
                 onChange={(e) => setLocale(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors font-semibold"
               >
                 <option value="id">Bahasa Indonesia</option>
                 <option value="en">English</option>
@@ -271,7 +269,7 @@ export default function SettingsPage() {
 
             {/* WA Number */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                 <Smartphone className="w-3.5 h-3.5 text-slate-400" />
                 Nomor WhatsApp Admin Guru
               </label>
@@ -280,9 +278,9 @@ export default function SettingsPage() {
                 value={waNumber}
                 onChange={(e) => setWaNumber(e.target.value)}
                 placeholder="Contoh: 628123456789"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
               />
-              <p className="text-[10px] text-slate-500 mt-1.5">
+              <p className="text-[10px] text-slate-400 mt-1.5 font-medium">
                 Nomor ini digunakan untuk mengirimkan salinan laporan progres murid langsung via WA.
               </p>
             </div>
@@ -292,16 +290,16 @@ export default function SettingsPage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99]"
+            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white text-xs font-bold uppercase tracking-wider py-3.5 rounded-xl shadow-md shadow-blue-200/40 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
           >
             {saving ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Menyimpan Pengaturan...</span>
               </>
             ) : (
               <>
-                <Save className="w-5 h-5" />
+                <Save className="w-4 h-4" />
                 <span>Simpan Pengaturan</span>
               </>
             )}

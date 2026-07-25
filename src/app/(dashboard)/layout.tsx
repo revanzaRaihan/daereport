@@ -13,8 +13,16 @@ import {
   LogOut, 
   Menu, 
   X,
-  User
+  User,
+  Lightbulb,
+  FileText,
+  AlertCircle,
+  ChevronRight
 } from 'lucide-react'
+
+const DAYS_MAP: Record<number, string> = {
+  1: 'Senin', 2: 'Selasa', 3: 'Rabu', 4: 'Kamis', 5: 'Jumat', 6: 'Sabtu', 7: 'Minggu'
+}
 
 export default function DashboardLayout({
   children,
@@ -24,17 +32,72 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  
+  // Auth & UI States
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  // KPI & Metric States
+  const [totalStudents, setTotalStudents] = useState(0)
+  const [totalReports, setTotalReports] = useState(0)
+  const [studentProgressList, setStudentProgressList] = useState<any[]>([])
+
+  const fetchKpis = async (userId: string) => {
+    try {
+      // 1. Total Students
+      const { count: studentCount } = await supabase
+        .from('students')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+      setTotalStudents(studentCount || 0)
+
+      // 2. Total Reports
+      const { count: reportCount } = await supabase
+        .from('reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+      setTotalReports(reportCount || 0)
+
+
+      // 4. Student Progress List (top 4 students by meeting count)
+      const { data: studentsData } = await supabase
+        .from('students')
+        .select('id, name, subject, meeting_count')
+        .eq('user_id', userId)
+        .order('meeting_count', { ascending: false })
+        .limit(4)
+      setStudentProgressList(studentsData || [])
+
+    } catch (e) {
+      console.error('Error loading KPI data:', e)
+    }
+  };
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUserEmail(user.email || null)
+        await fetchKpis(user.id)
       }
+      setLoading(false)
     }
     getUser()
+
+    // Setup realtime subscription to refresh metrics when data changes
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          if (user) fetchKpis(user.id)
+        })
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [supabase])
 
   const handleLogout = async () => {
@@ -51,90 +114,194 @@ export default function DashboardLayout({
     { name: 'Pengaturan', href: '/settings', icon: Settings },
   ]
 
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row relative">
+    <div className="h-screen bg-[#F8FAFC] text-[#0f172a] flex flex-col overflow-hidden font-sans">
+      
       {/* Mobile Top Bar */}
-      <header className="md:hidden bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between z-30">
+      <header className="md:hidden bg-white border-b border-[#E2E8F0] px-4 py-3 flex items-center justify-between z-30 h-14 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-400 border border-indigo-500/20">
-            <Sparkles className="w-5 h-5" />
+          <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+            <Sparkles className="w-4 h-4" />
           </div>
-          <span className="font-bold text-white text-base">Report Studio</span>
+          <span className="font-bold text-slate-900 text-sm tracking-tight">Report Studio</span>
         </div>
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-1 text-slate-400 hover:text-white"
+          className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg"
         >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </header>
 
-      {/* Sidebar - Desktop */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-20 w-64 bg-slate-900/50 backdrop-blur-md border-r border-slate-900/60 p-5 flex flex-col justify-between
-        transform md:translate-x-0 md:static md:flex transition-transform duration-200 ease-in-out
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="space-y-6">
-          {/* Logo */}
-          <div className="hidden md:flex items-center gap-3 px-2 py-1">
-            <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400 border border-indigo-500/20">
-              <Sparkles className="w-6 h-6" />
+      {/* Main Layout Container */}
+      <div className="flex flex-1 overflow-hidden relative">
+        
+        {/* LEFT NAVIGATION SIDEBAR (Width: 288px) */}
+        <aside className={`
+          absolute inset-y-0 left-0 z-20 w-72 bg-white border-r border-[#E2E8F0] flex flex-col justify-between shrink-0
+          transform md:translate-x-0 md:static md:flex transition-transform duration-200 ease-in-out
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
+          <div className="flex flex-col flex-1 overflow-y-auto">
+            {/* Top Section: Logo & Tagline */}
+            <div className="p-6 border-b border-[#E2E8F0] flex items-center gap-3 shrink-0">
+              <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="font-extrabold text-slate-950 text-base tracking-tight block leading-tight">Report Studio</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mt-0.5">AI LES PRIVAT</span>
+              </div>
             </div>
-            <span className="font-extrabold text-white text-lg tracking-tight">Report Studio</span>
+
+            {/* Middle Section: Nav Links */}
+            <nav className="p-4 space-y-1.5 flex-1">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`
+                      flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                      ${isActive 
+                        ? 'bg-[#EFF6FF] text-blue-600' 
+                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 border border-transparent hover:border-slate-100'}
+                    `}
+                  >
+                    <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-900'}`} />
+                    <span>{item.name}</span>
+                  </Link>
+                )
+              })}
+            </nav>
           </div>
 
-          {/* Nav Items */}
-          <nav className="space-y-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group
-                    ${isActive 
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/15' 
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}
-                  `}
-                >
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} />
-                  <span>{item.name}</span>
-                </Link>
-              )
-            })}
-          </nav>
-        </div>
-
-        {/* User Profile & Logout */}
-        <div className="space-y-3 pt-4 border-t border-slate-800/60">
-          <div className="flex items-center gap-3 px-2 py-1.5 bg-slate-950/40 rounded-xl border border-slate-900/80">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <User className="w-4 h-4" />
+          {/* Bottom Section: Profile & Logout */}
+          <div className="p-4 border-t border-[#E2E8F0] space-y-3 bg-slate-50/50">
+            <div className="flex items-center justify-between p-3 bg-white border border-[#E2E8F0] rounded-2xl shadow-card">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold font-mono">
+                  {userEmail ? getInitials(userEmail) : 'AI'}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 truncate">Pengajar</p>
+                  <p className="text-[10px] text-slate-400 truncate max-w-[130px] font-mono">{userEmail || 'Memuat...'}</p>
+                </div>
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                title="Keluar"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-slate-400 truncate">Guru Pengajar</p>
-              <p className="text-xs text-slate-500 truncate">{userEmail || 'Memuat...'}</p>
+          </div>
+        </aside>
+
+        {/* CENTER PRIMARY CONTENT (Scrollable Area) */}
+        <main className="flex-1 overflow-y-auto min-w-0 flex flex-col">
+          <div className="p-6 md:p-8 flex-1">
+            {children}
+          </div>
+        </main>
+
+        {/* RIGHT INTELLIGENCE PANEL (Width: 320px) - Hidden on smaller screens */}
+        <aside className="hidden lg:flex w-80 bg-white border-l border-[#E2E8F0] flex-col overflow-y-auto shrink-0 p-6 space-y-6">
+          
+          {/* Section 1: Hero Metric Card */}
+          <div className="bg-blue-600 rounded-2xl p-5 text-white shadow-lg shadow-blue-600/10 flex flex-col justify-between h-48 relative overflow-hidden group">
+            {/* Ambient pattern */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_60%)] pointer-events-none" />
+            
+            <div className="space-y-1 z-10">
+              <span className="text-xs font-bold text-blue-100 uppercase tracking-widest">PROGRES BULAN INI</span>
+              <p className="text-3xl font-extrabold tracking-tight font-mono">{totalReports}</p>
+            </div>
+
+            {/* Custom progress track: background #60A5FA at 30% opacity, with a white foreground bar */}
+            <div className="space-y-2 z-10">
+              <div className="h-1.5 bg-[#60A5FA]/30 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-white rounded-full transition-all duration-1000 ease-out" 
+                  style={{ width: `${Math.min(100, (totalReports / 24) * 100)}%` }}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between text-[10px] uppercase tracking-widest font-bold text-blue-100">
+                <span>Target: 24 Laporan</span>
+                <span className="font-mono">{Math.round((totalReports / 24) * 100)}%</span>
+              </div>
             </div>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all cursor-pointer"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Keluar</span>
-          </button>
-        </div>
-      </aside>
+          {/* Section 2: Metric Progress List */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aktivitas Murid</h3>
+              <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full font-mono">{totalStudents} Murid</span>
+            </div>
 
-      {/* Main Content Area */}
-      <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
-        {children}
-      </main>
+            <div className="space-y-3.5">
+              {studentProgressList.map((item, index) => {
+                const targetMeetings = 12
+                const pct = Math.min(100, (item.meeting_count / targetMeetings) * 100)
+
+                return (
+                  <div key={item.id} className="flex items-center gap-3 group">
+                    {/* Avatar: 32x32px circle, bg-slate-100, text-slate-600. Scales on parent hover */}
+                    <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs shrink-0 font-mono transition-transform duration-200 group-hover:scale-110">
+                      {getInitials(item.name)}
+                    </div>
+
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-900 truncate pr-2">{item.name}</span>
+                        <span className="font-semibold text-slate-500 font-mono shrink-0">{item.meeting_count}x</span>
+                      </div>
+                      
+                      {/* Bar: 4px height, bg-slate-100 background. Fill: Primary blue (#2563EB) */}
+                      <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-out" 
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {studentProgressList.length === 0 && (
+                <div className="text-xs text-slate-400 italic py-2">Belum ada aktivitas belajar.</div>
+              )}
+            </div>
+          </div>
+
+          {/* Section 3: Contextual Tip Box */}
+          <div className="bg-[#EFF6FF] border border-blue-100/50 rounded-2xl p-5 flex gap-3.5 items-start">
+            <div className="p-2 bg-white rounded-xl text-blue-600 border border-blue-100 shadow-card shrink-0">
+              <Lightbulb className="w-4 h-4" />
+            </div>
+            <div className="space-y-1 min-w-0">
+              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">TIPS HARI INI</span>
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Punya contoh laporan baru? Masukkan ke tab <strong>Dataset Gaya</strong> agar hasil generator AI semakin mirip gaya menulis Anda.
+              </p>
+            </div>
+          </div>
+
+
+        </aside>
+
+      </div>
     </div>
   )
 }

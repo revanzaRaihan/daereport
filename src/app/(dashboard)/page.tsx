@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { syncPendingReports } from '@/lib/schedule/syncPendingReports'
 import { 
   Sparkles, 
   Send, 
   Save, 
-  FileText, 
   Calendar, 
   Hash, 
   Languages, 
@@ -17,7 +17,9 @@ import {
   Loader2,
   Image as ImageIcon,
   Clock,
-  ChevronRight
+  BookOpen,
+  History,
+  GraduationCap
 } from 'lucide-react'
 
 export default function LaporanBuilderPage() {
@@ -93,7 +95,6 @@ export default function LaporanBuilderPage() {
             .order('report_date', { ascending: false })
             .order('meeting_number', { ascending: false })
 
-          // Calculate newest stats per student
           const latestReports: Record<string, any> = {}
           reportsData?.forEach(r => {
             if (!latestReports[r.student_id]) {
@@ -112,7 +113,6 @@ export default function LaporanBuilderPage() {
             let nextDate = ''
             if (lastReport) {
               const lastDate = new Date(lastReport.report_date)
-              // Calculate next scheduled day
               const scheduleDays = (s.schedules || []).map((sc: any) => Number(sc.schedule?.day_of_week)).filter(Boolean)
               
               if (scheduleDays.length > 0) {
@@ -165,10 +165,9 @@ export default function LaporanBuilderPage() {
     initPage()
   }, [supabase])
 
-  // Handle student dropdown selection change
   const handleStudentChange = (id: string) => {
     setSelectedStudentId(id)
-    setSelectedPendingId(null) // Reset pending tracker
+    setSelectedPendingId(null)
     if (id) {
       setMeetingNumber(meetingNumbersMap[id] || 1)
       setReportDate(nextDatesMap[id] || '')
@@ -178,14 +177,12 @@ export default function LaporanBuilderPage() {
     }
   }
 
-  // Handle selecting a pending report item from the checklist
   const handleSelectPending = (p: any) => {
     setSelectedPendingId(p.id)
     setMeetingNumber(p.meeting_number)
     setReportDate(p.report_date)
   }
 
-  // Generate Report via API
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedStudentId) return
@@ -226,7 +223,6 @@ export default function LaporanBuilderPage() {
     }
   }
 
-  // Save report to database
   const handleSaveToHistory = async () => {
     if (!selectedStudentId || !generatedText) return
     setSaving(true)
@@ -235,7 +231,6 @@ export default function LaporanBuilderPage() {
     try {
       let imageUrl: string | null = null
 
-      // Upload file to Supabase Storage if selected
       if (selectedImage) {
         const fileExt = selectedImage.name.split('.').pop()
         const fileName = `${selectedStudentId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
@@ -248,7 +243,6 @@ export default function LaporanBuilderPage() {
           throw new Error('Gagal mengunggah foto: ' + uploadErr.message)
         }
 
-        // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('reports')
           .getPublicUrl(fileName)
@@ -256,7 +250,6 @@ export default function LaporanBuilderPage() {
         imageUrl = publicUrl
       }
 
-      // Save report record
       const student = students.find(s => s.id === selectedStudentId)
       const { error: insertErr } = await supabase.from('reports').insert({
         student_id: selectedStudentId,
@@ -275,12 +268,10 @@ export default function LaporanBuilderPage() {
         throw new Error(insertErr.message)
       }
 
-      // Delete resolved pending report
       if (selectedPendingId) {
         await supabase.from('pending_reports').delete().eq('id', selectedPendingId)
       }
 
-      // Increment student meeting count
       const currentCount = student.meeting_count || 0
       await supabase.from('students')
         .update({ meeting_count: currentCount + 1 })
@@ -288,7 +279,6 @@ export default function LaporanBuilderPage() {
 
       setStatusMsg({ type: 'success', text: 'Laporan berhasil disimpan ke riwayat.' })
 
-      // Clear Form & State
       setMateri('')
       setBehavior('')
       setGeneratedText('')
@@ -296,22 +286,18 @@ export default function LaporanBuilderPage() {
       setSelectedImage(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
 
-      // Refresh page data
       router.refresh()
       
-      // Update values in-memory
       const nextMeet = meetingNumber + 1
       meetingNumbersMap[selectedStudentId] = nextMeet
       setMeetingNumber(nextMeet)
       
-      // Calculate next reportDate locally
       const checkDate = new Date(reportDate)
       checkDate.setDate(checkDate.getDate() + 7)
       const nextDateStr = checkDate.toISOString().split('T')[0]
       nextDatesMap[selectedStudentId] = nextDateStr
       setReportDate(nextDateStr)
 
-      // Remove saved pending report from map
       if (pendingReportsMap[selectedStudentId]) {
         const filtered = pendingReportsMap[selectedStudentId].filter(p => p.id !== selectedPendingId)
         setPendingReportsMap({
@@ -328,162 +314,208 @@ export default function LaporanBuilderPage() {
   }
 
   const selectedStudentPending = selectedStudentId ? pendingReportsMap[selectedStudentId] || [] : []
+  const currentStudent = students.find(s => s.id === selectedStudentId)
+  
+  // Calculate total pending reports for header counter
+  const totalPendingReportsCount = Object.values(pendingReportsMap).reduce((acc, curr) => acc + curr.length, 0)
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-          <Sparkles className="w-8 h-8 text-indigo-400" />
-          Buat Laporan AI
-        </h1>
-        <p className="text-slate-400 mt-2 text-sm">
-          Generate laporan harian murid secara instan dengan gaya bahasa Anda sendiri.
-        </p>
+      
+      {/* 1. PRIMARY CONTENT HEADER (Height: 64px, flex items-center justify-between) */}
+      <div className="h-16 flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight">Buat Laporan AI</h2>
+        </div>
+
+        {/* Button group: secondary outline + primary blue */}
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/dataset"
+            className="h-10 px-4 rounded-xl border border-[#E2E8F0] hover:bg-slate-50 transition-colors text-xs font-semibold text-slate-600 flex items-center gap-1.5 cursor-pointer bg-white shadow-sm"
+          >
+            <BookOpen className="w-4 h-4 text-slate-400" />
+            <span>Dataset Gaya</span>
+          </Link>
+          
+          <Link
+            href="/history"
+            className="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 transition-all duration-200 text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-200/50"
+          >
+            <History className="w-4 h-4" />
+            <span>Lihat Riwayat</span>
+          </Link>
+        </div>
       </div>
 
       {datasetCount === 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm px-4 py-3.5 rounded-xl flex gap-3 items-start">
-          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+        <div className="bg-amber-50 border border-amber-100/60 text-amber-800 text-xs px-4 py-3 rounded-2xl flex gap-3 items-start shadow-card">
+          <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
           <div>
-            <p className="font-semibold">Dataset gaya masih kosong!</p>
-            <p className="mt-1 text-xs opacity-90">
-              Silakan tambahkan contoh laporan di tab <strong>Dataset Gaya</strong> agar AI dapat menyesuaikan nada, struktur, dan tata bahasanya dengan gaya menulis Anda.
+            <span className="font-bold">Dataset Gaya Kosong</span>
+            <p className="mt-0.5 text-slate-600">
+              Silakan tambahkan minimal 1 contoh di tab <strong>Dataset Gaya</strong> agar AI memahami karakter tulisan Anda.
             </p>
           </div>
         </div>
       )}
 
       {statusMsg && (
-        <div className={`border text-sm px-4 py-3.5 rounded-xl flex gap-3 items-start ${
+        <div className={`border text-xs px-4 py-3 rounded-2xl flex gap-3 items-start shadow-card ${
           statusMsg.type === 'success' 
-            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-            : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+            ? 'bg-green-50 border-green-100 text-green-800' 
+            : 'bg-red-50 border-red-100 text-red-800'
         }`}>
-          {statusMsg.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />}
-          <span className="font-medium">{statusMsg.text}</span>
+          {statusMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-green-500" /> : <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />}
+          <span className="font-semibold">{statusMsg.text}</span>
         </div>
       )}
 
-      {/* Grid Workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      {/* 2. FILTER & SEARCH BAR (Horizontal layout, 16px padding, white, border-1px, py-2.5 inputs h-42px) */}
+      <div className="bg-white border border-[#E2E8F0] p-4 rounded-2xl shadow-card flex flex-col md:flex-row gap-4 items-center justify-between">
         
-        {/* Left Column: Form & Inputs */}
-        <section className="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 space-y-6 backdrop-blur-sm">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2 pb-3 border-b border-slate-800/60">
-            <FileText className="w-5 h-5 text-indigo-400" />
-            Detail Laporan
-          </h2>
+        {/* Student Selector: flex-1, icon-prefix, bg-slate-50, 12px rounded-xl */}
+        <div className="relative flex-1 w-full">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+            <GraduationCap className="w-4 h-4" />
+          </div>
+          <select
+            value={selectedStudentId}
+            onChange={(e) => handleStudentChange(e.target.value)}
+            className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl pl-10 pr-4 py-2.5 h-[42px] text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-300 transition-colors"
+          >
+            <option value="">-- Pilih Murid Les --</option>
+            {students.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.subject})
+              </option>
+            ))}
+          </select>
+        </div>
 
-          <form onSubmit={handleGenerate} className="space-y-5">
-            {/* Student Dropdown */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                Pilih Murid
-              </label>
-              <select
-                required
-                value={selectedStudentId}
-                onChange={(e) => handleStudentChange(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
-              >
-                <option value="">-- Pilih Murid --</option>
-                {students.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.subject})
-                  </option>
-                ))}
-              </select>
+        {/* Date Picker: bg-slate-50, prefix */}
+        <div className="relative w-full md:w-auto md:min-w-[170px]">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+            <Calendar className="w-4 h-4" />
+          </div>
+          <input
+            type="date"
+            value={reportDate}
+            onChange={(e) => setReportDate(e.target.value)}
+            className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl pl-10 pr-4 py-2.5 h-[42px] text-sm text-slate-700 focus:outline-none focus:border-blue-300 transition-colors"
+          />
+        </div>
+
+        {/* Language select: min-width 140px, bold 14px text */}
+        <div className="relative w-full md:w-auto md:min-w-[150px]">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+            <Languages className="w-4 h-4" />
+          </div>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as any)}
+            className="w-full bg-white border border-[#E2E8F0] rounded-xl pl-10 pr-4 py-2.5 h-[42px] text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-300 transition-colors"
+          >
+            <option value="id">Bahasa Indonesia</option>
+            <option value="en">English (EN)</option>
+          </select>
+        </div>
+
+        {/* Summary type select: min-width 140px, bold 14px text */}
+        <div className="relative w-full md:w-auto md:min-w-[150px]">
+          <select
+            value={reportType}
+            onChange={(e) => setReportType(e.target.value as any)}
+            className="w-full bg-white border border-[#E2E8F0] rounded-xl px-4 py-2.5 h-[42px] text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-300 transition-colors"
+          >
+            <option value="full">Laporan Lengkap</option>
+            <option value="overview">Hanya Ringkasan</option>
+          </select>
+        </div>
+
+      </div>
+
+      {/* 3. DATA CARD GRID (2-column grid xl:grid-cols-2 with 24px gap-6) */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+        
+        {/* CARD 1: INPUT DETAILS (padding p-6, rounded-2xl, card-shadow) */}
+        <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-card space-y-5 transition-all duration-200 hover:border-blue-200">
+          {/* Card Header: 48px avatar, title, subtitle, top-right status badge */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#EFF6FF] text-blue-600 flex items-center justify-center font-bold text-sm">
+                {currentStudent ? currentStudent.name.substring(0, 2).toUpperCase() : 'LS'}
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 leading-tight">
+                  {currentStudent ? currentStudent.name : 'Pilih Murid'}
+                </h3>
+                <p className="text-xs text-slate-400 font-medium">
+                  {currentStudent ? currentStudent.subject : 'Pelajaran les privat'}
+                </p>
+              </div>
             </div>
 
-            {/* If Student Selected, show Pending Reports reminder */}
-            {selectedStudentId && selectedStudentPending.length > 0 && (
-              <div className="bg-indigo-500/5 border border-indigo-500/10 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
-                  <Clock className="w-4 h-4" />
-                  Jadwal Belum Dilaporkan
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {selectedStudentPending.map((p) => {
-                    const isSelected = selectedPendingId === p.id
-                    return (
-                      <button
-                        type="button"
-                        key={p.id}
-                        onClick={() => handleSelectPending(p)}
-                        className={`
-                          flex items-center justify-between text-left p-2.5 rounded-lg border text-xs transition-all cursor-pointer
-                          ${isSelected 
-                            ? 'bg-indigo-600/20 border-indigo-500 text-white font-semibold' 
-                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'}
-                        `}
-                      >
-                        <div>
-                          <p>Meeting {p.meeting_number}</p>
-                          <p className="text-[10px] opacity-75 mt-0.5">{p.report_date}</p>
-                        </div>
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+            {/* Status Badge: Compact, color-coded, 10px bold uppercase */}
+            <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-50 text-green-700 border border-green-100">
+              MEETING {meetingNumber}
+            </span>
+          </div>
 
-            {/* Meet Number & Date inputs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Form Body */}
+          <div className="space-y-4 pt-2">
+
+            {/* Manual Meeting Number & Date Override */}
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Meeting Ke-
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                  Pertemuan Ke-
                 </label>
                 <div className="relative">
-                  <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs">#</span>
                   <input
                     type="number"
-                    required
                     min={1}
+                    required
                     value={meetingNumber}
                     onChange={(e) => setMeetingNumber(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl pl-7 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-400 h-9 font-semibold"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Tanggal
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                  Tanggal Laporan
                 </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="date"
-                    required
-                    value={reportDate}
-                    onChange={(e) => setReportDate(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
-                  />
-                </div>
+                <input
+                  type="date"
+                  required
+                  value={reportDate}
+                  onChange={(e) => setReportDate(e.target.value)}
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-400 h-9 font-semibold"
+                />
               </div>
             </div>
 
-            {/* Material input */}
+            {/* Material Area */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                Materi Hari Ini
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                Materi Belajar Hari Ini
               </label>
               <textarea
                 required
                 rows={3}
                 value={materi}
                 onChange={(e) => setMateri(e.target.value)}
-                placeholder="Contoh: Membuat game tank sederhana di Scratch dengan control arrow keys dan menembak spasi."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors resize-y"
+                placeholder="Masukkan topik, konsep, atau proyek yang dikerjakan murid..."
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-400 transition-colors resize-y leading-relaxed font-medium"
               />
             </div>
 
-            {/* Behavior input */}
+            {/* Behavior Area */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                 Behavior / Observasi Murid
               </label>
               <textarea
@@ -491,144 +523,140 @@ export default function LaporanBuilderPage() {
                 rows={3}
                 value={behavior}
                 onChange={(e) => setBehavior(e.target.value)}
-                placeholder="Contoh: Murid sangat antusias, bisa mengikuti instruksi dengan cepat, sempat menanyakan logika percabangan, sangat teliti."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors resize-y"
+                placeholder="Ketik bagaimana fokus murid, keaktifan, kendala, atau pencapaian sikapnya..."
+                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-400 transition-colors resize-y leading-relaxed font-medium"
               />
             </div>
 
-            {/* Lang & Report type dropdowns */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Languages className="w-4 h-4 text-slate-400" />
-                  Bahasa Laporan
-                </label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value as 'id' | 'en')}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
-                >
-                  <option value="id">Bahasa Indonesia</option>
-                  <option value="en">Bahasa Inggris (English)</option>
-                </select>
-              </div>
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Tipe Ringkasan
-                </label>
-                <select
-                  value={reportType}
-                  onChange={(e) => setReportType(e.target.value as 'full' | 'overview')}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
-                >
-                  <option value="full">Laporan Lengkap (+Latihan & Catatan)</option>
-                  <option value="overview">Hanya Overview Laporan</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Generate Button */}
+          {/* Card Footer: Generate trigger Button */}
+          <div className="pt-2 border-t border-[#E2E8F0]">
             <button
               type="submit"
+              onClick={handleGenerate}
               disabled={generating || !selectedStudentId}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800/40 disabled:text-slate-500 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99]"
+              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 disabled:text-slate-100 text-white text-xs font-bold uppercase tracking-wider py-3 rounded-xl shadow-md shadow-blue-200/40 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
             >
               {generating ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Sedang men-generate laporan dengan AI...</span>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Menganalisis & Menyusun Laporan AI...</span>
                 </>
               ) : (
                 <>
-                  <Send className="w-5 h-5" />
-                  <span>Generate Laporan AI</span>
+                  <Send className="w-4 h-4" />
+                  <span>Generate Draft Laporan AI</span>
                 </>
               )}
             </button>
-          </form>
+          </div>
         </section>
 
-        {/* Right Column: AI Output Editor & Save Form */}
-        <section className="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 space-y-6 backdrop-blur-sm">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2 pb-3 border-b border-slate-800/60">
-            <Sparkles className="w-5 h-5 text-indigo-400" />
-            Hasil AI & Editor Laporan
-          </h2>
-
-          {!generatedText && !generating && (
-            <div className="h-96 border border-dashed border-slate-800 rounded-2xl flex flex-col justify-center items-center text-slate-500 p-8 text-center">
-              <Sparkles className="w-12 h-12 text-slate-700 mb-3 animate-pulse" />
-              <p className="font-semibold text-sm">Belum Ada Laporan Ter-generate</p>
-              <p className="text-xs opacity-75 mt-1 max-w-sm">
-                Isi form di sebelah kiri lalu klik tombol Generate untuk membuat draft laporan progres otomatis.
-              </p>
+        {/* CARD 2: EDITOR & SAVE (padding p-6, rounded-2xl, card-shadow) */}
+        <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-card space-y-5 transition-all duration-200 hover:border-blue-200">
+          
+          {/* Card Header: 48px avatar, title, subtitle, top-right status badge */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-slate-50 border border-[#E2E8F0] text-slate-400 flex items-center justify-center font-bold">
+                <Sparkles className="w-5 h-5 text-blue-600 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 leading-tight">Draf Hasil Laporan</h3>
+                <p className="text-xs text-slate-400 font-medium">
+                  {generatedText ? 'Draf AI berhasil dibuat' : 'Belum ada draf terbuat'}
+                </p>
+              </div>
             </div>
-          )}
 
-          {generating && (
-            <div className="h-96 border border-slate-800 bg-slate-950/20 rounded-2xl flex flex-col justify-center items-center text-slate-400 p-8 text-center space-y-3">
-              <Loader2 className="w-10 h-10 text-indigo-400 animate-spin" />
-              <p className="font-semibold text-sm">Menghubungkan ke API AI...</p>
-              <p className="text-xs opacity-75 max-w-sm">
-                AI sedang menganalisis materi dan mencocokkannya dengan database contoh tulisan Anda. Proses ini memakan waktu 3 - 8 detik.
-              </p>
-            </div>
-          )}
+            {/* Status Badge */}
+            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+              generatedText 
+                ? 'bg-green-50 text-green-700 border border-green-100' 
+                : 'bg-red-50 text-red-700 border border-red-100'
+            }`}>
+              {generatedText ? 'READY' : 'EMPTY'}
+            </span>
+          </div>
 
-          {generatedText && (
-            <div className="space-y-5">
-              {warningMsg && (
-                <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs px-4 py-3 rounded-lg flex gap-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>{warningMsg}</span>
+          {/* Form Body / Content Area */}
+          <div className="space-y-4 min-h-[295px] flex flex-col justify-between">
+            {!generatedText && !generating && (
+              <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-slate-400 border border-dashed border-[#E2E8F0] rounded-xl min-h-[200px]">
+                <Sparkles className="w-8 h-8 text-slate-300 mb-2" />
+                <span className="text-xs font-bold text-slate-500">Menunggu Pembuatan Laporan</span>
+                <p className="text-[10px] text-slate-400 mt-1 max-w-[250px]">
+                  Pilih murid dan isi deskripsi materi di sebelah kiri, lalu klik tombol Generate.
+                </p>
+              </div>
+            )}
+
+            {generating && (
+              <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-slate-400 bg-slate-55/20 border border-dashed border-[#E2E8F0] rounded-xl min-h-[200px] space-y-2">
+                <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
+                <span className="text-xs font-bold text-slate-500">Memproses...</span>
+                <p className="text-[10px] text-slate-400 mt-1 max-w-[220px]">
+                  AI sedang mencocokkan materi dengan contoh dataset Anda.
+                </p>
+              </div>
+            )}
+
+            {generatedText && (
+              <div className="space-y-4 flex-1 flex flex-col justify-between">
+                {warningMsg && (
+                  <div className="bg-amber-50 border border-amber-100/60 text-amber-700 text-[10px] px-3.5 py-2 rounded-xl flex gap-2 font-semibold">
+                    <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500" />
+                    <span>{warningMsg}</span>
+                  </div>
+                )}
+
+                {/* Edit content textarea */}
+                <div className="flex-1 flex flex-col">
+                  <textarea
+                    rows={10}
+                    value={generatedText}
+                    onChange={(e) => setGeneratedText(e.target.value)}
+                    className="w-full flex-1 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 text-xs text-slate-700 font-mono leading-relaxed focus:outline-none focus:border-blue-400 resize-y"
+                  />
                 </div>
-              )}
 
-              {/* Text editor for final output */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Edit Hasil Laporan (Jika Perlu)
-                </label>
-                <textarea
-                  rows={14}
-                  value={generatedText}
-                  onChange={(e) => setGeneratedText(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors font-mono leading-relaxed resize-y"
-                />
+                {/* Optional Image Upload */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    Lampirkan Foto Laporan (Opsional)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
+                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-2.5 text-xs text-slate-500 focus:outline-none file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wider file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer"
+                  />
+                </div>
               </div>
+            )}
+          </div>
 
-              {/* Optional image attachment */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1">
-                  <ImageIcon className="w-4 h-4 text-slate-400" />
-                  Lampirkan Foto Progres (Opsional)
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-300 text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer"
-                />
-              </div>
-
-              {/* Save button */}
+          {/* Card Footer: Save Trigger Button */}
+          {generatedText && (
+            <div className="pt-2 border-t border-[#E2E8F0]">
               <button
                 type="button"
                 onClick={handleSaveToHistory}
                 disabled={saving}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-indigo-600/15 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99]"
+                className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white text-xs font-bold uppercase tracking-wider py-3 rounded-xl shadow-md shadow-blue-200/40 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Menyimpan ke Riwayat...</span>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Menyimpan Laporan...</span>
                   </>
                 ) : (
                   <>
-                    <Save className="w-5 h-5" />
-                    <span>Simpan ke Riwayat Laporan</span>
+                    <Save className="w-4 h-4" />
+                    <span>Simpan Ke Riwayat Laporan</span>
                   </>
                 )}
               </button>

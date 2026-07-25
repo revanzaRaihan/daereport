@@ -190,53 +190,53 @@ export default function HistoryPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-          <History className="w-8 h-8 text-indigo-400" />
-          Riwayat Laporan
-        </h1>
-        <p className="text-slate-400 mt-1 text-sm">
-          Lihat kembali, salin, atau edit laporan progres belajar murid yang sudah Anda simpan.
-        </p>
+      {/* Primary Content Header (Height: 64px, flex items-center justify-between) */}
+      <div className="h-16 flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight">Riwayat Laporan</h2>
+          <div className="h-4 w-px bg-[#E2E8F0]" />
+          <span className="text-sm font-medium text-slate-500">
+            {reports.length} Laporan Tersimpan
+          </span>
+        </div>
       </div>
 
       {/* Messages */}
       {successMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm px-4 py-3 rounded-xl flex gap-2">
-          <Check className="w-5 h-5 mt-0.5 flex-shrink-0" />
-          <span className="font-medium">{successMsg}</span>
+        <div className="bg-green-50 border border-green-100 text-green-800 text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-card font-medium">
+          <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-500" />
+          <span>{successMsg}</span>
         </div>
       )}
       {errorMsg && (
-        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm px-4 py-3 rounded-xl flex gap-2">
-          <X className="w-5 h-5 mt-0.5 flex-shrink-0" />
-          <span className="font-medium">{errorMsg}</span>
+        <div className="bg-red-50 border border-red-100 text-red-800 text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-card font-medium">
+          <X className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-500" />
+          <span>{errorMsg}</span>
         </div>
       )}
 
-      {/* Filter and Search Section */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+      {/* Filter and Search Bar (White background, border 1px, shadow, py-2.5 inputs h-42px) */}
+      <div className="bg-white border border-[#E2E8F0] p-4 rounded-2xl shadow-card flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             placeholder="Cari materi, behavior, isi laporan..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+            className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl py-2.5 pl-10 pr-4 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
           />
         </div>
 
         {/* Student Filter dropdown */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <label className="text-xs text-slate-400 font-semibold uppercase tracking-wider hidden sm:block">
-            Filter Murid:
-          </label>
+        <div className="relative w-full md:w-auto md:min-w-[200px]">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+            <User className="w-4 h-4" />
+          </div>
           <select
             value={selectedStudentId}
             onChange={(e) => setSelectedStudentId(e.target.value)}
-            className="w-full sm:w-56 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none"
+            className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl pl-10 pr-4 py-2.5 h-[42px] text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-400 transition-colors"
           >
             <option value="all">Semua Murid</option>
             {students.map(s => (
@@ -248,37 +248,37 @@ export default function HistoryPage() {
 
       {loading ? (
         <div className="h-64 flex justify-center items-center">
-          <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+          <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
         </div>
       ) : filteredReports.length === 0 ? (
-        <div className="border border-dashed border-slate-800 rounded-2xl p-16 text-center text-slate-500">
-          <History className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-          <p className="font-semibold text-sm">Tidak Ada Riwayat Laporan</p>
-          <p className="text-xs opacity-75 mt-1">Belum ada laporan yang sesuai dengan kriteria pencarian Anda.</p>
+        <div className="border border-dashed border-[#E2E8F0] bg-white rounded-2xl p-16 text-center text-slate-400 shadow-card">
+          <History className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <p className="font-bold text-slate-700 text-sm">Tidak Ada Riwayat Laporan</p>
+          <p className="text-xs text-slate-400 mt-1">Belum ada laporan yang sesuai dengan kriteria pencarian Anda.</p>
         </div>
       ) : (
         <div className="space-y-6">
           {filteredReports.map((report) => (
             <div 
               key={report.id} 
-              className="bg-slate-900/30 border border-slate-900 rounded-2xl p-6 backdrop-blur-sm hover:border-slate-800/80 transition-all space-y-4"
+              className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-card hover:border-blue-300 transition-all duration-200 space-y-4"
             >
               {/* Report Header Row */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-950/60">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold text-white text-base">{report.student_name}</span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold rounded-md">
-                      <BookOpen className="w-3 h-3" />
+                    <span className="font-extrabold text-slate-900 text-sm">{report.student_name}</span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold rounded-xl">
+                      <BookOpen className="w-3.5 h-3.5" />
                       {report.subject}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-950 text-slate-400 text-xs font-semibold rounded-md">
-                      Meeting {report.meeting_number}
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-50 border border-slate-100 text-slate-500 text-xs font-bold rounded-xl font-mono">
+                      Meet {report.meeting_number}
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
-                    <Calendar className="w-3.5 h-3.5" />
+                  <p className="text-xs text-slate-400 flex items-center gap-1.5 font-medium font-mono">
+                    <Calendar className="w-3.5 h-3.5 text-slate-300" />
                     {report.report_date}
                   </p>
                 </div>
@@ -288,10 +288,10 @@ export default function HistoryPage() {
                   <button
                     onClick={() => handleCopyText(report.id, report.content)}
                     className={`
-                      px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer
+                      px-3 py-1.5 rounded-xl border text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer h-9
                       ${copiedId === report.id 
-                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                        : 'bg-slate-950 border-slate-900 text-slate-400 hover:text-slate-200 hover:border-slate-800'}
+                        ? 'bg-green-50 border-green-150 text-green-700' 
+                        : 'bg-[#EFF6FF] border-blue-100 text-blue-600 hover:bg-blue-50'}
                     `}
                   >
                     {copiedId === report.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -300,7 +300,7 @@ export default function HistoryPage() {
 
                   <button
                     onClick={() => handleOpenEditModal(report)}
-                    className="text-slate-400 hover:text-white p-2 hover:bg-slate-850 rounded-lg transition-colors cursor-pointer border border-slate-900 bg-slate-950/60"
+                    className="text-slate-500 hover:text-blue-600 p-2 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer border border-[#E2E8F0] bg-white h-9 w-9 flex items-center justify-center shadow-sm"
                     title="Edit Laporan"
                   >
                     <Edit2 className="w-4 h-4" />
@@ -308,7 +308,7 @@ export default function HistoryPage() {
 
                   <button
                     onClick={() => handleDeleteReport(report.id)}
-                    className="text-rose-400 hover:text-rose-300 p-2 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer border border-slate-900 bg-slate-950/60"
+                    className="text-rose-500 hover:text-rose-600 p-2 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer border border-[#E2E8F0] bg-white h-9 w-9 flex items-center justify-center shadow-sm"
                     title="Hapus Laporan"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -320,23 +320,23 @@ export default function HistoryPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* Inputs Info Column (1/3) */}
-                <div className="bg-slate-950/30 border border-slate-900 rounded-xl p-4 space-y-4 text-xs">
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 space-y-4 text-xs font-medium">
                   <div>
-                    <span className="font-semibold text-slate-400 uppercase tracking-wider block mb-1">Materi Diajarkan:</span>
-                    <p className="text-slate-300 font-medium leading-relaxed font-mono">{report.materi}</p>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Materi Diajarkan:</span>
+                    <p className="text-slate-700 leading-relaxed font-mono whitespace-pre-wrap">{report.materi}</p>
                   </div>
                   <div>
-                    <span className="font-semibold text-slate-400 uppercase tracking-wider block mb-1">Behavior & Observasi:</span>
-                    <p className="text-slate-300 font-medium leading-relaxed font-mono">{report.behavior}</p>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Behavior & Observasi:</span>
+                    <p className="text-slate-700 leading-relaxed font-mono whitespace-pre-wrap">{report.behavior}</p>
                   </div>
                   {report.image_url && (
                     <div className="pt-2">
-                      <span className="font-semibold text-slate-400 uppercase tracking-wider block mb-2">Foto Progres:</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Foto Progres:</span>
                       <a 
                         href={report.image_url} 
                         target="_blank" 
                         rel="noreferrer"
-                        className="group relative block w-full aspect-video bg-slate-950 rounded-lg overflow-hidden border border-slate-850"
+                        className="group relative block w-full aspect-video bg-slate-950 rounded-xl overflow-hidden border border-[#E2E8F0] shadow-sm"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
@@ -354,12 +354,12 @@ export default function HistoryPage() {
                 </div>
 
                 {/* AI Output Content (2/3) */}
-                <div className="lg:col-span-2 bg-slate-950/60 border border-slate-900/80 rounded-xl p-5 relative">
-                  <div className="absolute top-3.5 right-4 flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-900/40 border border-slate-850 px-2 py-1 rounded-md">
-                    <Sparkles className="w-3 h-3 text-indigo-400" />
-                    Assembled Draft
+                <div className="lg:col-span-2 bg-white border border-[#E2E8F0] rounded-xl p-5 relative shadow-sm min-h-[180px] flex flex-col">
+                  <div className="absolute top-3.5 right-4 flex items-center gap-1.5 text-[9px] font-extrabold text-blue-700 uppercase tracking-widest bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-xl">
+                    <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                    <span>Hasil Laporan</span>
                   </div>
-                  <pre className="text-xs text-slate-200 leading-relaxed font-mono whitespace-pre-wrap max-h-72 overflow-y-auto pr-2">
+                  <pre className="text-xs text-slate-700 leading-relaxed font-mono whitespace-pre-wrap max-h-72 overflow-y-auto pr-2 mt-4 flex-1">
                     {report.content}
                   </pre>
                 </div>
@@ -372,25 +372,25 @@ export default function HistoryPage() {
 
       {/* EDIT MODAL */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+          <div className="w-full max-w-2xl bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button 
               onClick={() => setShowEditModal(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-white"
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-              <Edit2 className="w-5 h-5 text-indigo-400" />
-              Edit Riwayat Laporan
+            <h3 className="text-base font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <Edit2 className="w-4 h-4 text-blue-600" />
+              <span>Edit Riwayat Laporan</span>
             </h3>
 
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                    Meeting Ke-
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                    Pertemuan Ke-
                   </label>
                   <input
                     type="number"
@@ -398,12 +398,12 @@ export default function HistoryPage() {
                     min={1}
                     value={editMeetingNumber}
                     onChange={(e) => setEditMeetingNumber(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none"
+                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 font-semibold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                     Tanggal Laporan
                   </label>
                   <input
@@ -411,76 +411,76 @@ export default function HistoryPage() {
                     required
                     value={editReportDate}
                     onChange={(e) => setEditReportDate(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none"
+                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 font-semibold"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Materi
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                  Topik/Materi
                 </label>
                 <textarea
                   required
                   rows={2}
                   value={editMateri}
                   onChange={(e) => setEditMateri(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none resize-y"
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 text-slate-800 text-xs focus:outline-none focus:border-blue-400 font-medium leading-relaxed resize-y"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Behavior
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                  Behavior & Observasi
                 </label>
                 <textarea
                   required
                   rows={2}
                   value={editBehavior}
                   onChange={(e) => setEditBehavior(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none resize-y"
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 text-slate-800 text-xs focus:outline-none focus:border-blue-400 font-medium leading-relaxed resize-y"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Konten Hasil Laporan (Final Draft)
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                  Konten Laporan Akhir (Final Draft)
                 </label>
                 <textarea
                   required
-                  rows={10}
+                  rows={8}
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white text-xs font-mono leading-relaxed focus:outline-none resize-y"
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 text-slate-800 text-xs font-mono leading-relaxed focus:outline-none focus:border-blue-400 resize-y"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                   <ImageIcon className="w-4 h-4 text-slate-400" />
-                  Ganti/Unggah Foto Progres Baru (Opsional)
+                  Ganti Foto Progres Baru (Opsional)
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   ref={editFileInputRef}
                   onChange={(e) => setEditImage(e.target.files?.[0] || null)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-300 text-xs focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer"
+                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-2.5 text-xs text-slate-500 focus:outline-none file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wider file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer"
                 />
               </div>
 
-              <div className="pt-4 flex justify-end gap-3">
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="bg-slate-950 border border-slate-800 hover:bg-slate-900 text-slate-300 font-medium px-4 py-2.5 rounded-xl cursor-pointer text-sm"
+                  className="bg-white border border-[#E2E8F0] hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2.5 rounded-xl cursor-pointer text-xs uppercase tracking-wider"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={updating}
-                  className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white font-medium px-5 py-2.5 rounded-xl flex items-center gap-1 shadow-lg shadow-indigo-600/10 cursor-pointer text-sm"
+                  className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-blue-200/50 cursor-pointer text-xs uppercase tracking-wider"
                 >
                   {updating && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>Simpan Perubahan</span>
