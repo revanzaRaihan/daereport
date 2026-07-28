@@ -219,6 +219,18 @@ export default function StudentsAndSchedulesPage() {
     setSubmitting(true)
     setErrorMsg('')
 
+    if (!schedStart || !schedEnd) {
+      triggerToast('error', locale === 'id' ? 'Jam mulai dan jam selesai harus diisi.' : 'Start and end times are required.')
+      setSubmitting(false)
+      return
+    }
+
+    if (schedStart >= schedEnd) {
+      triggerToast('error', locale === 'id' ? 'Jam mulai harus sebelum jam selesai.' : 'Start time must be before end time.')
+      setSubmitting(false)
+      return
+    }
+
     try {
       let scheduleId = editingSchedule?.id
 
