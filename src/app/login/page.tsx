@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { KeyRound, Mail, Sparkles, Loader2 } from 'lucide-react'
+import Logo from '@/components/Logo'
+import { KeyRound, Mail, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -62,66 +63,63 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
+    <main className="min-h-screen bg-white flex flex-col justify-center items-center p-4 relative overflow-hidden">
 
       {/* Main Card */}
-      <div className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-8 shadow-2xl relative z-10">
+      <div className="w-full max-w-md bg-white border border-black/10 rounded-2xl p-8 shadow-none relative z-10">
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20 text-indigo-400 mb-4 animate-pulse">
-            <Sparkles className="w-8 h-8" />
+          <div className="inline-flex items-center justify-center p-3 bg-black rounded-xl text-white mb-4">
+            <Logo className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Report Studio</h1>
-          <p className="text-sm text-slate-400 mt-2">
+          <h1 className="text-2xl font-bold text-black tracking-tighter uppercase font-editorial-headline">Report Studio</h1>
+          <p className="text-sm text-neutral-500 mt-2 font-sans">
             {isSignUp ? 'Daftar Akun Pengajar Baru' : 'Masuk ke Dashboard Laporan Progres Les'}
           </p>
         </div>
 
         {errorMsg && (
-          <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm px-4 py-3 rounded-lg mb-6">
+          <div className="bg-white border border-black text-black text-sm px-4 py-3 rounded-lg mb-6 shadow-none font-bold">
             {errorMsg}
           </div>
         )}
 
         {successMsg && (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-4 py-3.5 rounded-lg mb-6 leading-relaxed select-all font-mono">
+          <div className="bg-white border border-black text-black text-xs px-4 py-3.5 rounded-lg mb-6 leading-relaxed select-all font-mono shadow-none">
             {successMsg}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 font-mono">
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="nama@email.com"
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-white border border-black/10 rounded-xl py-3 pl-11 pr-4 text-black text-sm placeholder-neutral-400 focus:outline-none focus:border-black focus:shadow-[0_0_0_1px_#000000] transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 font-mono">
               Password
             </label>
             <div className="relative">
-              <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-white border border-black/10 rounded-xl py-3 pl-11 pr-4 text-black text-sm placeholder-neutral-400 focus:outline-none focus:border-black focus:shadow-[0_0_0_1px_#000000] transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
               />
             </div>
           </div>
@@ -129,7 +127,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white font-medium py-3 rounded-xl shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] text-sm"
+            className="w-full bg-black hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 text-white font-bold uppercase tracking-wider py-3 rounded-xl shadow-none flex items-center justify-center gap-2 cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98] text-sm font-mono"
           >
             {loading ? (
               <>
@@ -149,14 +147,14 @@ export default function LoginPage() {
               setErrorMsg('')
               setSuccessMsg('')
             }}
-            className="text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer underline"
+            className="text-neutral-500 hover:text-black font-bold uppercase tracking-widest font-mono text-[10px] cursor-pointer underline"
           >
             {isSignUp ? 'Sudah punya akun? Masuk di sini' : 'Belum punya akun? Daftar di sini'}
           </button>
         </div>
       </div>
 
-      <div className="text-xs text-slate-600 mt-8 relative z-10">
+      <div className="text-[10px] text-neutral-400 mt-8 relative z-10 font-mono uppercase tracking-widest">
         Report Studio &middot; Next.js + Supabase
       </div>
     </main>

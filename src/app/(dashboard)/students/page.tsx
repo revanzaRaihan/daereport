@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { syncPendingReports } from '@/lib/schedule/syncPendingReports'
+import CustomSelect from '@/components/CustomSelect'
+import CustomDatePicker from '@/components/CustomDatePicker'
+import { useTranslation } from '@/components/LocaleProvider'
 import { 
   Users, 
   Calendar, 
@@ -28,8 +31,19 @@ const DAYS_MAP: Record<number, string> = {
   7: 'Minggu'
 }
 
+const DAYS_MAP_EN: Record<number, string> = {
+  1: 'Monday',
+  2: 'Tuesday',
+  3: 'Wednesday',
+  4: 'Thursday',
+  5: 'Friday',
+  6: 'Saturday',
+  7: 'Sunday'
+}
+
 export default function StudentsAndSchedulesPage() {
   const supabase = createClient()
+  const { t, locale } = useTranslation()
   const [userId, setUserId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'students' | 'schedules'>('students')
 
@@ -297,63 +311,65 @@ export default function StudentsAndSchedulesPage() {
   return (
     <div className="space-y-6">
       {/* Primary Content Header (Height: 64px, flex items-center justify-between) */}
-      <div className="h-16 flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+      <div className="h-16 flex items-center justify-between border-b border-black/10 pb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight">Kelola Murid & Jadwal</h2>
-          <div className="h-4 w-px bg-[#E2E8F0]" />
-          <span className="text-sm font-medium text-slate-500">
-            {activeTab === 'students' ? `${students.length} Murid` : `${schedules.length} Jadwal`}
+          <h2 className="text-xl font-bold text-black tracking-tighter uppercase font-editorial-headline">{t('students_title')}</h2>
+          <div className="h-4 w-px bg-black/10" />
+          <span className="text-xs font-medium text-neutral-500 font-mono tracking-wider">
+            {activeTab === 'students' 
+              ? `${students.length} ${t('nav_students')}` 
+              : `${schedules.length} ${locale === 'id' ? 'Jadwal' : 'Schedules'}`}
           </span>
         </div>
 
         {/* Tab Buttons & Add Button */}
         <div className="flex items-center gap-3">
-          <div className="bg-[#EFF6FF] border border-blue-100 p-1 rounded-xl flex gap-1 text-xs font-semibold">
+          <div className="bg-neutral-100 border border-black/5 p-1 rounded-xl flex gap-1 text-xs font-semibold">
             <button
               onClick={() => setActiveTab('students')}
               className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'students' ? 'bg-blue-600 text-white font-bold' : 'text-slate-500 hover:text-slate-800'
+                activeTab === 'students' ? 'bg-black text-white font-bold' : 'text-neutral-500 hover:text-black'
               }`}
             >
-              Daftar Murid
+              {t('tab_students')}
             </button>
             <button
               onClick={() => setActiveTab('schedules')}
               className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'schedules' ? 'bg-blue-600 text-white font-bold' : 'text-slate-500 hover:text-slate-800'
+                activeTab === 'schedules' ? 'bg-black text-white font-bold' : 'text-neutral-500 hover:text-black'
               }`}
             >
-              Jadwal Les
+              {t('tab_schedules')}
             </button>
           </div>
 
           <button
             onClick={() => activeTab === 'students' ? handleOpenStudentModal() : handleOpenScheduleModal()}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-blue-200/50 cursor-pointer"
+            className="bg-black hover:bg-neutral-800 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-none cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
           >
             <Plus className="w-4 h-4" />
-            <span>Tambah</span>
+            <span>{locale === 'id' ? 'Tambah' : 'Add'}</span>
           </button>
         </div>
       </div>
 
       {/* Messages */}
       {successMsg && (
-        <div className="bg-green-50 border border-green-100 text-green-800 text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-card font-medium">
-          <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-500" />
+        <div className="bg-white border border-black text-black text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-none font-medium">
+          <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-black" />
           <span>{successMsg}</span>
         </div>
       )}
       {errorMsg && (
-        <div className="bg-red-50 border border-red-100 text-red-800 text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-card font-medium">
-          <X className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-500" />
+        <div className="bg-white border border-black text-black text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-none font-bold">
+          <X className="w-4 h-4 mt-0.5 flex-shrink-0 text-black" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {loading ? (
         <div className="h-64 flex justify-center items-center">
-          <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+          <Loader2 className="w-6 h-6 text-black animate-spin" />
         </div>
       ) : (
         <>
@@ -362,58 +378,64 @@ export default function StudentsAndSchedulesPage() {
             <div className="space-y-4">
               {/* Search Bar */}
               <div className="relative max-w-md">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                 <input
                   type="text"
-                  placeholder="Cari nama murid atau mata pelajaran..."
+                  placeholder={t('placeholder_search_student')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-white border border-[#E2E8F0] rounded-xl py-2.5 pl-10 pr-4 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors shadow-card"
+                  className="form-input-premium pl-10 shadow-none"
                 />
               </div>
 
               {filteredStudents.length === 0 ? (
-                <div className="border border-dashed border-[#E2E8F0] bg-white rounded-2xl p-12 text-center text-slate-400 shadow-card">
-                  <Users className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                  <p className="font-bold text-sm text-slate-700">Belum Ada Data Murid</p>
-                  <p className="text-xs text-slate-400 mt-1">Silakan klik tombol Tambah untuk mendaftarkan murid baru.</p>
+                <div className="border border-dashed border-black/10 bg-white rounded-2xl p-12 text-center text-neutral-400 shadow-none">
+                  <Users className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
+                  <p className="font-bold text-sm text-black font-mono uppercase tracking-wider">
+                    {locale === 'id' ? 'Belum Ada Data Murid' : 'No Student Data Yet'}
+                  </p>
+                  <p className="text-xs text-neutral-500 mt-1">
+                    {locale === 'id' 
+                      ? 'Silakan klik tombol Tambah untuk mendaftarkan murid baru.' 
+                      : 'Please click the Add button to register a new student.'}
+                  </p>
                 </div>
               ) : (
-                <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-card">
+                <div className="bg-white border border-black/10 rounded-2xl overflow-hidden shadow-none">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-[#E2E8F0] text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50">
-                        <th className="p-4">Nama Murid</th>
-                        <th className="p-4">Mata Pelajaran / Kelas</th>
-                        <th className="p-4">Tanggal Mulai</th>
-                        <th className="p-4 text-center">Jumlah Meeting</th>
-                        <th className="p-4 text-right">Aksi</th>
+                      <tr className="border-b border-black/10 text-[10px] font-bold text-neutral-500 uppercase tracking-widest bg-neutral-50 font-mono">
+                        <th className="p-4">{t('label_student_name')}</th>
+                        <th className="p-4">{t('label_student_subject')}</th>
+                        <th className="p-4">{locale === 'id' ? 'Tanggal Mulai' : 'Start Date'}</th>
+                        <th className="p-4 text-center">{t('label_student_meet_count')}</th>
+                        <th className="p-4 text-right">{locale === 'id' ? 'Aksi' : 'Actions'}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                    <tbody className="divide-y divide-black/5 text-sm text-neutral-700">
                       {filteredStudents.map((s) => (
-                        <tr key={s.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="p-4 font-bold text-slate-900">{s.name}</td>
+                        <tr key={s.id} className="hover:bg-neutral-50/50 transition-colors duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]">
+                          <td className="p-4 font-bold text-black">{s.name}</td>
                           <td className="p-4">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-100 text-blue-600 text-xs font-semibold rounded-xl">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-100 border border-black/5 text-black text-xs font-semibold rounded-xl font-mono uppercase">
                               <BookOpen className="w-3.5 h-3.5" />
                               {s.subject}
                             </span>
                           </td>
-                          <td className="p-4 text-slate-500 font-mono text-xs">{s.first_meeting_date || '-'}</td>
-                          <td className="p-4 text-center font-bold text-slate-800 font-mono">{s.meeting_count || 0}</td>
+                          <td className="p-4 text-neutral-500 font-mono text-xs">{s.first_meeting_date || '-'}</td>
+                          <td className="p-4 text-center font-bold text-black font-mono">{s.meeting_count || 0}</td>
                           <td className="p-4 text-right space-x-1.5">
                             <button
                               onClick={() => handleOpenStudentModal(s)}
-                              className="text-slate-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                              title="Edit"
+                              className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
+                              title={t('btn_edit')}
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteStudent(s.id)}
-                              className="text-rose-400 hover:text-rose-600 p-1.5 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                              title="Hapus"
+                              className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer font-bold"
+                              title={t('btn_delete')}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -431,10 +453,16 @@ export default function StudentsAndSchedulesPage() {
           {activeTab === 'schedules' && (
             <div>
               {schedules.length === 0 ? (
-                <div className="border border-dashed border-[#E2E8F0] bg-white rounded-2xl p-12 text-center text-slate-400 shadow-card">
-                  <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                  <p className="font-bold text-sm text-slate-700">Belum Ada Jadwal Belajar</p>
-                  <p className="text-xs text-slate-400 mt-1">Klik tombol Tambah untuk membuat jadwal belajar dan menugaskannya ke murid.</p>
+                <div className="border border-dashed border-black/10 bg-white rounded-2xl p-12 text-center text-neutral-400 shadow-none">
+                  <Calendar className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
+                  <p className="font-bold text-sm text-black font-mono uppercase tracking-wider">
+                    {locale === 'id' ? 'Belum Ada Jadwal Belajar' : 'No Lesson Schedules Yet'}
+                  </p>
+                  <p className="text-xs text-neutral-550 mt-1">
+                    {locale === 'id' 
+                      ? 'Klik tombol Tambah untuk membuat jadwal belajar dan menugaskannya ke murid.' 
+                      : 'Click the Add button to create a lesson schedule and assign it to students.'}
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -446,23 +474,23 @@ export default function StudentsAndSchedulesPage() {
                     return (
                       <div 
                         key={sched.id} 
-                        className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-card hover:border-blue-300 transition-all duration-200 flex flex-col justify-between"
+                        className="bg-white border border-black/10 rounded-2xl p-5 shadow-none hover:border-black/35 transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col justify-between"
                       >
                         <div className="space-y-3">
                           <div className="flex items-start justify-between">
-                            <span className="px-2.5 py-1 bg-blue-50 border border-blue-100 text-blue-700 text-[10px] font-extrabold uppercase tracking-widest rounded-xl">
-                              {DAYS_MAP[sched.day_of_week]}
+                            <span className="px-2.5 py-1 bg-black border border-transparent text-white text-[10px] font-extrabold uppercase tracking-widest rounded-xl font-mono">
+                              {locale === 'id' ? DAYS_MAP[sched.day_of_week] : DAYS_MAP_EN[sched.day_of_week]}
                             </span>
                             <div className="flex gap-1">
                               <button
                                 onClick={() => handleOpenScheduleModal(sched)}
-                                className="text-slate-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteSchedule(sched.id)}
-                                className="text-rose-400 hover:text-rose-600 p-1.5 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -470,26 +498,28 @@ export default function StudentsAndSchedulesPage() {
                           </div>
 
                           <div className="space-y-1">
-                            <div className="flex items-center gap-1.5 text-slate-900 font-extrabold text-base font-mono">
-                              <Clock className="w-4 h-4 text-blue-600" />
+                            <div className="flex items-center gap-1.5 text-black font-bold text-base font-mono">
+                              <Clock className="w-4 h-4 text-black" />
                               {sched.start_time.substring(0, 5)} - {sched.end_time.substring(0, 5)}
                             </div>
-                            {sched.label && <p className="text-xs text-slate-400 font-medium">{sched.label}</p>}
+                            {sched.label && <p className="text-xs text-neutral-555 font-medium">{sched.label}</p>}
                           </div>
                         </div>
 
-                        <div className="mt-5 pt-4 border-t border-slate-100">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
-                            Murid Terdaftar ({assignedStudents.length})
+                        <div className="mt-5 pt-4 border-t border-black/15">
+                          <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-2 font-mono">
+                            {locale === 'id' ? 'Murid Terdaftar' : 'Assigned Students'} ({assignedStudents.length})
                           </span>
                           {assignedStudents.length === 0 ? (
-                            <span className="text-xs text-slate-400 italic">Belum ada murid ditugaskan</span>
+                            <span className="text-xs text-neutral-400 italic">
+                              {locale === 'id' ? 'Belum ada murid ditugaskan' : 'No students assigned yet'}
+                            </span>
                           ) : (
                             <div className="flex flex-wrap gap-1.5">
                               {assignedStudents.map((name: string, i: number) => (
                                 <span 
                                   key={i} 
-                                  className="px-2.5 py-1 bg-slate-50 border border-slate-100 text-slate-600 text-xs font-semibold rounded-lg"
+                                  className="px-2.5 py-1 bg-neutral-100 border border-black/5 text-black text-xs font-semibold rounded-lg font-mono uppercase"
                                 >
                                   {name}
                                 </span>
@@ -509,23 +539,25 @@ export default function StudentsAndSchedulesPage() {
 
       {/* STUDENT MODAL */}
       {showStudentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
-          <div className="w-full max-w-lg bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="w-full max-w-lg bg-white border border-black/10 rounded-2xl p-6 shadow-none relative">
             <button 
               onClick={() => setShowStudentModal(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              className="absolute right-4 top-4 text-neutral-400 hover:text-black p-1 rounded-lg"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-base font-bold text-slate-900 mb-6">
-              {editingStudent ? 'Edit Data Murid' : 'Tambah Murid Baru'}
+            <h3 className="text-base font-bold text-black mb-6 uppercase tracking-wider font-mono">
+              {editingStudent 
+                ? (locale === 'id' ? 'Edit Data Murid' : 'Edit Student Details') 
+                : (locale === 'id' ? 'Tambah Murid Baru' : 'Add New Student')}
             </h3>
 
             <form onSubmit={handleStudentSubmit} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                  Nama Murid
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                  {t('label_student_name')}
                 </label>
                 <input
                   type="text"
@@ -533,13 +565,13 @@ export default function StudentsAndSchedulesPage() {
                   value={studentName}
                   onChange={(e) => setStudentName(e.target.value)}
                   placeholder="Contoh: Renziro"
-                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
+                  className="form-input-premium"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                  Mata Pelajaran / Kelas
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                  {t('label_student_subject')}
                 </label>
                 <input
                   type="text"
@@ -547,26 +579,25 @@ export default function StudentsAndSchedulesPage() {
                   value={studentSubject}
                   onChange={(e) => setStudentSubject(e.target.value)}
                   placeholder="Contoh: Scratch Level 1"
-                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
+                  className="form-input-premium"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                    Mulai Pertemuan Pertama
+                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                    {t('label_student_first_meet')}
                   </label>
-                  <input
-                    type="date"
+                  <CustomDatePicker
                     value={studentFirstMeeting}
-                    onChange={(e) => setStudentFirstMeeting(e.target.value)}
-                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
+                    onChange={(val) => setStudentFirstMeeting(val)}
+                    placeholder="Pilih Tanggal Pertama"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                    Jumlah Meeting
+                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                    {t('label_student_meet_count')}
                   </label>
                   <input
                     type="number"
@@ -574,26 +605,26 @@ export default function StudentsAndSchedulesPage() {
                     required
                     value={studentMeetingCount}
                     onChange={(e) => setStudentMeetingCount(Number(e.target.value))}
-                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
+                    className="form-input-premium"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+              <div className="pt-4 flex justify-end gap-3 border-t border-black/10">
                 <button
                   type="button"
                   onClick={() => setShowStudentModal(false)}
-                  className="bg-white border border-[#E2E8F0] hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2.5 rounded-xl cursor-pointer text-xs uppercase tracking-wider"
+                  className="bg-white border border-black/10 hover:bg-neutral-100 text-black font-semibold px-4 py-2.5 rounded-xl cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
                 >
-                  Batal
+                  {t('btn_cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-blue-200/50 cursor-pointer text-xs uppercase tracking-wider"
+                  className="bg-black hover:bg-neutral-800 disabled:bg-neutral-200 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-none cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
                 >
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  <span>Simpan Data</span>
+                  <span>{t('btn_save_data')}</span>
                 </button>
               </div>
             </form>
@@ -603,124 +634,112 @@ export default function StudentsAndSchedulesPage() {
 
       {/* SCHEDULE MODAL */}
       {showScheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
-          <div className="w-full max-w-lg bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="w-full max-w-lg bg-white border border-black/10 rounded-2xl p-6 shadow-none relative">
             <button 
               onClick={() => setShowScheduleModal(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              className="absolute right-4 top-4 text-neutral-400 hover:text-black p-1 rounded-lg"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-base font-bold text-slate-900 mb-6">
-              {editingSchedule ? 'Edit Jadwal Belajar' : 'Tambah Jadwal Baru'}
+            <h3 className="text-base font-bold text-black mb-6 uppercase tracking-wider font-mono">
+              {editingSchedule 
+                ? (locale === 'id' ? 'Edit Jadwal Belajar' : 'Edit Lesson Schedule') 
+                : (locale === 'id' ? 'Tambah Jadwal Baru' : 'Add New Schedule')}
             </h3>
 
             <form onSubmit={handleScheduleSubmit} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                  Hari Belajar
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                  {t('label_sched_day')}
                 </label>
-                <select
-                  value={schedDay}
-                  onChange={(e) => setSchedDay(Number(e.target.value))}
-                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors font-semibold"
-                >
-                  {Object.entries(DAYS_MAP).map(([key, name]) => (
-                    <option key={key} value={key}>{name}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  options={Object.entries(DAYS_MAP).map(([key, name]) => ({ value: key, label: locale === 'id' ? name : DAYS_MAP_EN[Number(key)] }))}
+                  value={String(schedDay)}
+                  onChange={(val) => setSchedDay(Number(val))}
+                  isSearchable={false}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                    Jam Mulai
+                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                    {t('label_sched_start')}
                   </label>
                   <input
                     type="time"
                     required
                     value={schedStart}
                     onChange={(e) => setSchedStart(e.target.value)}
-                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
+                    className="form-input-premium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                    Jam Selesai
+                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                    {t('label_sched_end')}
                   </label>
                   <input
                     type="time"
                     required
                     value={schedEnd}
                     onChange={(e) => setSchedEnd(e.target.value)}
-                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
+                    className="form-input-premium"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                  Label Info (Opsional)
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                  {t('label_sched_label')}
                 </label>
                 <input
                   type="text"
                   value={schedLabel}
                   onChange={(e) => setSchedLabel(e.target.value)}
-                  placeholder="Contoh: Jam Les Sore / Kelas Weekend"
-                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
+                  placeholder="Contoh: Zoom Link, atau Google Meet"
+                  className="form-input-premium"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                  Pilih Murid Untuk Jadwal Ini
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                  {t('label_sched_students')}
                 </label>
-                {students.length === 0 ? (
-                  <p className="text-slate-400 text-xs italic">Harap tambahkan murid terlebih dahulu.</p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2 mt-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 max-h-36 overflow-y-auto">
-                    {students.map(s => {
-                      const isSelected = schedStudentIds.includes(s.id)
-                      return (
-                        <button
-                          type="button"
-                          key={s.id}
-                          onClick={() => toggleStudentSelection(s.id)}
-                          className={`
-                            flex items-center gap-2 p-2 rounded-lg text-xs font-semibold text-left transition-colors cursor-pointer border
-                            ${isSelected 
-                              ? 'bg-blue-50 border-blue-200 text-blue-600' 
-                              : 'bg-white border-transparent text-slate-600 hover:text-slate-900'}
-                          `}
-                        >
-                          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white'}`}>
-                            {isSelected && <Check className="w-2.5 h-2.5" />}
-                          </div>
-                          <span className="truncate">{s.name}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
+                <div className="border border-black/10 rounded-xl p-3 max-h-40 overflow-y-auto space-y-2 bg-neutral-50/50">
+                  {students.map(s => {
+                    const isChecked = schedStudentIds.includes(s.id)
+                    return (
+                      <label key={s.id} className="flex items-center gap-2 text-xs font-semibold text-black cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleStudentSelection(s.id)}
+                          className="rounded text-black focus:ring-black h-4 w-4 border-black/15 accent-black"
+                        />
+                        <span>{s.name} ({s.subject})</span>
+                      </label>
+                    )
+                  })}
+                </div>
               </div>
 
-              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+              <div className="pt-4 flex justify-end gap-3 border-t border-black/10">
                 <button
                   type="button"
                   onClick={() => setShowScheduleModal(false)}
-                  className="bg-white border border-[#E2E8F0] hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2.5 rounded-xl cursor-pointer text-xs uppercase tracking-wider"
+                  className="bg-white border border-black/10 hover:bg-neutral-100 text-black font-semibold px-4 py-2.5 rounded-xl cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
                 >
-                  Batal
+                  {t('btn_cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-blue-200/50 cursor-pointer text-xs uppercase tracking-wider"
+                  className="bg-black hover:bg-neutral-800 disabled:bg-neutral-200 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-none cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
                 >
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  <span>Simpan Jadwal</span>
+                  <span>{t('btn_save_data')}</span>
                 </button>
               </div>
             </form>

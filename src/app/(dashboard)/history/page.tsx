@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import CustomSelect from '@/components/CustomSelect'
+import { useTranslation } from '@/components/LocaleProvider'
 import { 
   History, 
   Search, 
@@ -24,6 +26,7 @@ import {
 
 export default function HistoryPage() {
   const supabase = createClient()
+  const { t, locale } = useTranslation()
   const [userId, setUserId] = useState<string | null>(null)
   
   // Data States
@@ -255,90 +258,103 @@ export default function HistoryPage() {
     }
   })
 
+  const studentFilterOptions = [
+    { value: 'all', label: locale === 'id' ? 'Semua Murid' : 'All Students' },
+    ...students.map(s => ({ value: s.id, label: s.name }))
+  ]
+
+  const sortOptions = [
+    { value: 'recent', label: locale === 'id' ? 'Terbaru (Recent)' : 'Most Recent' },
+    { value: 'oldest', label: locale === 'id' ? 'Terlama (Oldest)' : 'Oldest' }
+  ]
+
   return (
     <div className="space-y-6">
       {/* Primary Content Header (Height: 64px, flex items-center justify-between) */}
-      <div className="h-16 flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+      <div className="h-16 flex items-center justify-between border-b border-black/10 pb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight">Riwayat Laporan</h2>
-          <div className="h-4 w-px bg-[#E2E8F0]" />
-          <span className="text-sm font-medium text-slate-500">
-            {reports.length} Laporan Tersimpan
+          <h2 className="text-xl font-bold text-black tracking-tighter uppercase font-editorial-headline">{t('history_title')}</h2>
+          <div className="h-4 w-px bg-black/10" />
+          <span className="text-xs font-medium text-neutral-500 font-mono tracking-wider">
+            {reports.length} {locale === 'id' ? 'Laporan Tersimpan' : 'Saved Reports'}
           </span>
         </div>
       </div>
 
       {/* Messages */}
       {successMsg && (
-        <div className="bg-green-50 border border-green-100 text-green-800 text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-card font-medium">
-          <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-500" />
+        <div className="bg-white border border-black text-black text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-none font-medium">
+          <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-black" />
           <span>{successMsg}</span>
         </div>
       )}
       {errorMsg && (
-        <div className="bg-red-50 border border-red-100 text-red-800 text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-card font-medium">
-          <X className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-500" />
+        <div className="bg-white border border-black text-black text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-none font-bold">
+          <X className="w-4 h-4 mt-0.5 flex-shrink-0 text-black" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* Filter and Search Bar (White background, border 1px, shadow, py-2.5 inputs h-42px) */}
-      <div className="bg-white border border-[#E2E8F0] p-4 rounded-2xl shadow-card flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-white border border-black/10 p-4 rounded-2xl shadow-none flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="relative flex-1 w-full">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <input
             type="text"
-            placeholder="Cari materi, behavior, isi laporan..."
+            placeholder={t('placeholder_search_history')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl py-2.5 pl-10 pr-4 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
+            className="form-input-premium pl-10 shadow-none"
           />
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto mt-4 md:mt-0">
           {/* Student Filter dropdown */}
           <div className="relative w-full sm:w-[200px]">
-            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 z-10">
               <User className="w-4 h-4" />
             </div>
-            <select
+            <CustomSelect
+              options={studentFilterOptions}
               value={selectedStudentId}
-              onChange={(e) => setSelectedStudentId(e.target.value)}
-              className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl pl-10 pr-4 py-2.5 h-[42px] text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-400 transition-colors"
-            >
-              <option value="all">Semua Murid</option>
-              {students.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+              onChange={setSelectedStudentId}
+              placeholder="Semua Murid"
+              className="pl-10"
+            />
           </div>
 
           {/* Sort Order Selector dropdown */}
           <div className="relative w-full sm:w-[170px]">
-            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 z-10">
               <ArrowUpDown className="w-4 h-4" />
             </div>
-            <select
+            <CustomSelect
+              options={sortOptions}
               value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as any)}
-              className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl pl-10 pr-4 py-2.5 h-[42px] text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-400 transition-colors"
-            >
-              <option value="recent">Terbaru (Recent)</option>
-              <option value="oldest">Terlama (Oldest)</option>
-            </select>
+              onChange={(val) => setSortOrder(val as any)}
+              placeholder={locale === 'id' ? 'Urutkan' : 'Sort By'}
+              isSearchable={false}
+              className="pl-10"
+            />
           </div>
         </div>
       </div>
 
       {loading ? (
         <div className="h-64 flex justify-center items-center">
-          <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+          <Loader2 className="w-6 h-6 text-black animate-spin" />
         </div>
       ) : groupedList.length === 0 ? (
-        <div className="border border-dashed border-[#E2E8F0] bg-white rounded-2xl p-16 text-center text-slate-400 shadow-card">
-          <History className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <p className="font-bold text-slate-700 text-sm">Tidak Ada Riwayat Laporan</p>
-          <p className="text-xs text-slate-400 mt-1">Belum ada laporan yang sesuai dengan kriteria pencarian Anda.</p>
+        <div className="border border-dashed border-black/10 bg-white rounded-2xl p-16 text-center text-neutral-400 shadow-none">
+          <History className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
+          <p className="font-bold text-black text-sm font-mono uppercase tracking-wider">
+            {locale === 'id' ? 'Tidak Ada Riwayat Laporan' : 'No Report History Found'}
+          </p>
+          <p className="text-xs text-neutral-500 mt-1">
+            {locale === 'id' 
+              ? 'Belum ada laporan yang sesuai dengan kriteria pencarian Anda.' 
+              : 'No reports match your current search filters.'}
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -347,29 +363,29 @@ export default function HistoryPage() {
             return (
               <div 
                 key={group.studentId}
-                className="bg-white border border-[#E2E8F0] rounded-2xl shadow-card overflow-hidden transition-all duration-200"
+                className="bg-white border border-black/10 rounded-2xl shadow-none overflow-hidden transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20"
               >
                 {/* Accordion Trigger (Student Header) */}
                 <div 
                   onClick={() => toggleStudentExpand(group.studentId)}
-                  className="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 transition-colors select-none"
+                  className="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-neutral-50/50 transition-colors duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] select-none"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0 font-mono">
+                    <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm shrink-0 font-mono">
                       {group.studentName.substring(0, 2).toUpperCase()}
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-slate-900 text-sm">{group.studentName}</h3>
-                      <p className="text-xs text-slate-500 font-medium">{group.subject}</p>
+                      <h3 className="font-bold text-black text-sm">{group.studentName}</h3>
+                      <p className="text-xs text-neutral-500 font-medium font-mono uppercase tracking-wider">{group.subject}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center px-2.5 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl font-mono">
-                      {group.reports.length} Laporan
+                    <span className="inline-flex items-center px-2.5 py-0.5 bg-neutral-100 border border-black/5 text-black text-xs font-bold rounded-xl font-mono uppercase">
+                      {group.reports.length} {locale === 'id' ? 'Laporan' : 'Reports'}
                     </span>
                     <ChevronDown 
-                      className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${
+                      className={`w-5 h-5 text-neutral-400 transition-transform duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                         isExpanded ? 'rotate-180' : ''
                       }`}
                     />
@@ -378,7 +394,7 @@ export default function HistoryPage() {
 
                 {/* Accordion Body (Report List) */}
                 {isExpanded && (
-                  <div className="border-t border-[#E2E8F0] bg-slate-50/30 divide-y divide-slate-100">
+                  <div className="border-t border-black/10 bg-neutral-50/30 divide-y divide-black/5">
                     {group.reports.map((report) => {
                       const isReportExpanded = !!expandedReports[report.id]
                       return (
@@ -390,14 +406,14 @@ export default function HistoryPage() {
                             className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer select-none"
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <span className="inline-flex items-center px-2.5 py-0.5 bg-slate-55 border border-slate-200 text-slate-500 text-xs font-bold rounded-xl font-mono shrink-0">
-                                Meet {report.meeting_number}
+                              <span className="inline-flex items-center px-2.5 py-0.5 bg-black border border-transparent text-white text-xs font-bold rounded-xl font-mono shrink-0">
+                                {locale === 'id' ? 'Meet' : 'Meeting'} {report.meeting_number}
                               </span>
-                              <span className="text-xs text-slate-400 font-mono shrink-0 flex items-center gap-1 font-semibold">
-                                <Calendar className="w-3.5 h-3.5 text-slate-300" />
+                              <span className="text-xs text-neutral-400 font-mono shrink-0 flex items-center gap-1 font-semibold">
+                                <Calendar className="w-3.5 h-3.5 text-neutral-300" />
                                 {report.report_date}
                               </span>
-                              <p className="text-xs text-slate-600 font-semibold truncate max-w-xs md:max-w-md hidden sm:block">
+                              <p className="text-xs text-neutral-700 font-semibold truncate max-w-xs md:max-w-md hidden sm:block">
                                 {report.materi}
                               </p>
                             </div>
@@ -409,14 +425,14 @@ export default function HistoryPage() {
                                   handleCopyText(report.id, report.content)
                                 }}
                                 className={`
-                                  px-2.5 py-1 rounded-xl border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer h-7
+                                  px-2.5 py-1 rounded-xl border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer h-7 font-mono uppercase tracking-wider
                                   ${copiedId === report.id 
-                                    ? 'bg-green-50 border-green-150 text-green-700' 
-                                    : 'bg-[#EFF6FF] border-blue-100 text-blue-600 hover:bg-blue-50'}
+                                    ? 'bg-white border-black text-black font-bold' 
+                                    : 'bg-white border-black/10 text-neutral-500 hover:text-black hover:bg-neutral-100'}
                                 `}
                               >
                                 {copiedId === report.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                <span>{copiedId === report.id ? 'Tersalin' : 'Salin'}</span>
+                                <span>{copiedId === report.id ? t('btn_copied') : (locale === 'id' ? 'Salin' : 'Copy')}</span>
                               </button>
 
                               <button
@@ -424,12 +440,12 @@ export default function HistoryPage() {
                                   e.stopPropagation()
                                   toggleReportExpand(report.id)
                                 }}
-                                className={`p-1.5 rounded-xl transition-colors cursor-pointer border border-[#E2E8F0] h-7 w-7 flex items-center justify-center shadow-sm ${
+                                className={`p-1.5 rounded-xl transition-colors cursor-pointer border h-7 w-7 flex items-center justify-center shadow-none ${
                                   isReportExpanded 
-                                    ? 'bg-blue-50 text-blue-600 border-blue-200' 
-                                    : 'bg-white text-slate-500 hover:text-blue-600 hover:bg-slate-50'
+                                    ? 'bg-black text-white border-black' 
+                                    : 'bg-white text-neutral-500 border-black/10 hover:text-black hover:bg-neutral-100'
                                 }`}
-                                title="Lihat Detail Laporan"
+                                title={locale === 'id' ? 'Lihat Detail Laporan' : 'View Report Details'}
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </button>
@@ -439,8 +455,8 @@ export default function HistoryPage() {
                                   e.stopPropagation()
                                   handleOpenEditModal(report)
                                 }}
-                                className="text-slate-505 hover:text-blue-600 p-1.5 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer border border-[#E2E8F0] bg-white h-7 w-7 flex items-center justify-center shadow-sm"
-                                title="Edit Laporan"
+                                className="text-neutral-500 hover:text-black p-1.5 hover:bg-neutral-100 rounded-xl transition-colors cursor-pointer border border-black/10 bg-white h-7 w-7 flex items-center justify-center shadow-none"
+                                title={t('btn_edit')}
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
@@ -450,14 +466,14 @@ export default function HistoryPage() {
                                   e.stopPropagation()
                                   handleDeleteReport(report.id)
                                 }}
-                                className="text-rose-500 hover:text-rose-600 p-1.5 hover:bg-rose-55 rounded-xl transition-colors cursor-pointer border border-[#E2E8F0] bg-white h-7 w-7 flex items-center justify-center shadow-sm"
-                                title="Hapus Laporan"
+                                className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-xl transition-colors cursor-pointer border border-black/10 bg-white h-7 w-7 flex items-center justify-center shadow-none font-bold"
+                                title={t('btn_delete')}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
 
                               <ChevronDown 
-                                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
+                                className={`w-4 h-4 text-neutral-400 transition-transform duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                                   isReportExpanded ? 'rotate-180' : ''
                                 }`}
                               />
@@ -465,43 +481,51 @@ export default function HistoryPage() {
                           </div>
 
                           {/* Mobile-only materi preview row */}
-                          <p className="text-xs text-slate-700 font-semibold block sm:hidden cursor-pointer" onClick={() => toggleReportExpand(report.id)}>
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Topik:</span>
+                          <p className="text-xs text-neutral-700 font-semibold block sm:hidden cursor-pointer" onClick={() => toggleReportExpand(report.id)}>
+                            <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-0.5 font-mono">
+                              {locale === 'id' ? 'Topik:' : 'Topic:'}
+                            </span>
                             {report.materi}
                           </p>
 
                           {/* Expanded Details Box */}
                           {isReportExpanded && (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4.5 mt-2 transition-all">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 bg-neutral-50 border border-black/5 rounded-2xl p-4.5 mt-2 transition-all">
                               
                               {/* Inputs details (1/3) */}
                               <div className="space-y-3.5 text-xs font-medium">
                                 <div>
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Materi Diajarkan:</span>
-                                  <p className="text-slate-755 leading-relaxed font-mono whitespace-pre-wrap bg-white border border-[#E2E8F0] p-3 rounded-xl shadow-sm">{report.materi}</p>
+                                  <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-1 font-mono">
+                                    {locale === 'id' ? 'Materi Diajarkan:' : 'Lesson Taught:'}
+                                  </span>
+                                  <p className="text-black leading-relaxed font-mono whitespace-pre-wrap bg-white border border-black/10 p-3 rounded-xl shadow-none">{report.materi}</p>
                                 </div>
                                 <div>
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Behavior & Observasi:</span>
-                                  <p className="text-slate-755 leading-relaxed font-mono whitespace-pre-wrap bg-white border border-[#E2E8F0] p-3 rounded-xl shadow-sm">{report.behavior}</p>
+                                  <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-1 font-mono">
+                                    {locale === 'id' ? 'Behavior & Observasi:' : 'Behavior & Observation:'}
+                                  </span>
+                                  <p className="text-black leading-relaxed font-mono whitespace-pre-wrap bg-white border border-black/10 p-3 rounded-xl shadow-none">{report.behavior}</p>
                                 </div>
                                 {report.image_url && (
                                   <div>
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Foto Progres:</span>
+                                    <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-2 font-mono">
+                                      {locale === 'id' ? 'Foto Progres:' : 'Progress Photo:'}
+                                    </span>
                                     <a 
                                       href={report.image_url} 
                                       target="_blank" 
                                       rel="noreferrer"
-                                      className="group relative block w-full max-w-[240px] aspect-video bg-slate-950 rounded-xl overflow-hidden border border-[#E2E8F0] shadow-sm"
+                                      className="group relative block w-full max-w-[240px] aspect-video bg-neutral-900 rounded-xl overflow-hidden border border-black/10 shadow-none"
                                     >
                                       {/* eslint-disable-next-line @next/next/no-img-element */}
                                       <img 
                                         src={report.image_url} 
                                         alt="Progress" 
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        className="w-full h-full object-cover filter grayscale contrast-115 group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
                                       />
-                                      <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-medium gap-1 text-[10px] uppercase tracking-wider backdrop-blur-[2px] transition-all">
+                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-medium gap-1 text-[10px] uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]">
                                         <ExternalLink className="w-3.5 h-3.5" />
-                                        Buka Gambar
+                                        {locale === 'id' ? 'Buka Gambar' : 'Open Image'}
                                       </div>
                                     </a>
                                   </div>
@@ -509,12 +533,12 @@ export default function HistoryPage() {
                               </div>
 
                               {/* AI report output content (2/3) */}
-                              <div className="lg:col-span-2 bg-white border border-[#E2E8F0] rounded-2xl p-5 relative shadow-sm flex flex-col min-h-[200px]">
-                                <div className="absolute top-3.5 right-4 flex items-center gap-1.5 text-[9px] font-extrabold text-blue-700 uppercase tracking-widest bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-xl">
+                              <div className="lg:col-span-2 bg-white border border-black/10 rounded-2xl p-5 relative shadow-none flex flex-col min-h-[200px]">
+                                <div className="absolute top-3.5 right-4 flex items-center gap-1.5 text-[9px] font-extrabold text-white uppercase tracking-widest bg-black px-2.5 py-1 rounded-xl font-mono">
                                   <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                                  <span>Hasil Laporan</span>
+                                  <span>{locale === 'id' ? 'Hasil Laporan' : 'Report Output'}</span>
                                 </div>
-                                <pre className="text-xs text-slate-700 leading-relaxed font-mono whitespace-pre-wrap max-h-72 overflow-y-auto pr-2 mt-4 flex-1">
+                                <pre className="text-xs text-black leading-relaxed font-mono whitespace-pre-wrap max-h-72 overflow-y-auto pr-2 mt-4 flex-1">
                                   {report.content}
                                 </pre>
                               </div>
@@ -535,25 +559,25 @@ export default function HistoryPage() {
 
       {/* EDIT MODAL */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
-          <div className="w-full max-w-2xl bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="w-full max-w-2xl bg-white border border-black/10 rounded-2xl p-6 shadow-none relative max-h-[90vh] overflow-y-auto">
             <button 
               onClick={() => setShowEditModal(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              className="absolute right-4 top-4 text-neutral-400 hover:text-black p-1 rounded-lg"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-base font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <Edit2 className="w-4 h-4 text-blue-600" />
-              <span>Edit Riwayat Laporan</span>
+            <h3 className="text-base font-bold text-black mb-6 flex items-center gap-2 uppercase tracking-wider font-mono">
+              <Edit2 className="w-4 h-4 text-black" />
+              <span>{t('modal_edit_report')}</span>
             </h3>
 
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                    Pertemuan Ke-
+                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                    {locale === 'id' ? 'Pertemuan Ke-' : 'Meeting Number'}
                   </label>
                   <input
                     type="number"
@@ -561,99 +585,98 @@ export default function HistoryPage() {
                     min={1}
                     value={editMeetingNumber}
                     onChange={(e) => setEditMeetingNumber(Number(e.target.value))}
-                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 font-semibold"
+                    className="form-input-premium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                    Tanggal Laporan
+                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                    {locale === 'id' ? 'Tanggal Laporan' : 'Report Date'}
                   </label>
                   <input
                     type="date"
                     required
                     value={editReportDate}
                     onChange={(e) => setEditReportDate(e.target.value)}
-                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 font-semibold"
+                    className="form-input-premium"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                  Topik/Materi
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                  {locale === 'id' ? 'Topik/Materi' : 'Topic/Material'}
                 </label>
                 <textarea
                   required
                   rows={2}
                   value={editMateri}
                   onChange={(e) => setEditMateri(e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 text-slate-800 text-xs focus:outline-none focus:border-blue-400 font-medium leading-relaxed resize-y"
+                  className="form-textarea-premium"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                  Behavior & Observasi
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                  {locale === 'id' ? 'Behavior & Observasi' : 'Behavior & Observation'}
                 </label>
                 <textarea
                   required
                   rows={2}
                   value={editBehavior}
                   onChange={(e) => setEditBehavior(e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 text-slate-800 text-xs focus:outline-none focus:border-blue-400 font-medium leading-relaxed resize-y"
+                  className="form-textarea-premium"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                  Konten Laporan Akhir (Final Draft)
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                  {locale === 'id' ? 'Konten Laporan Akhir (Final Draft)' : 'Final Report Draft Content'}
                 </label>
                 <textarea
                   required
                   rows={8}
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 text-slate-800 text-xs font-mono leading-relaxed focus:outline-none focus:border-blue-400 resize-y"
+                  className="form-textarea-premium font-mono text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                  <ImageIcon className="w-4 h-4 text-slate-400" />
-                  Ganti Foto Progres Baru (Opsional)
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5 font-mono">
+                  <ImageIcon className="w-4 h-4 text-neutral-400" />
+                  {locale === 'id' ? 'Ganti Foto Progres Baru (Opsional)' : 'Change to New Progress Photo (Optional)'}
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   ref={editFileInputRef}
                   onChange={(e) => setEditImage(e.target.files?.[0] || null)}
-                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-2.5 text-xs text-slate-500 focus:outline-none file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wider file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer"
+                  className="w-full bg-white border border-black/10 rounded-xl p-2.5 text-xs text-neutral-550 focus:outline-none file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wider file:bg-black file:text-white hover:file:bg-neutral-800 cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
                 />
               </div>
 
-              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+              <div className="pt-4 flex justify-end gap-3 border-t border-black/10">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="bg-white border border-[#E2E8F0] hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2.5 rounded-xl cursor-pointer text-xs uppercase tracking-wider"
+                  className="bg-white border border-black/10 hover:bg-neutral-100 text-black font-semibold px-4 py-2.5 rounded-xl cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
                 >
-                  Batal
+                  {t('btn_cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={updating}
-                  className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-blue-200/50 cursor-pointer text-xs uppercase tracking-wider"
+                  className="bg-black hover:bg-neutral-800 disabled:bg-neutral-200 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-none cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
                 >
                   {updating && <Loader2 className="w-4 h-4 animate-spin" />}
-                  <span>Simpan Perubahan</span>
+                  <span>{locale === 'id' ? 'Simpan Perubahan' : 'Save Changes'}</span>
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
     </div>
   )
 }

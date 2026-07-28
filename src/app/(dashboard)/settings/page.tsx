@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import CustomSelect from '@/components/CustomSelect'
+import { useTranslation } from '@/components/LocaleProvider'
 import { 
   Settings, 
   Save, 
@@ -18,6 +20,7 @@ import {
 
 export default function SettingsPage() {
   const supabase = createClient()
+  const { t, locale: currentLocale, setLocale: updateGlobalLocale } = useTranslation()
 
   // Loaders & Alert states
   const [loading, setLoading] = useState(true)
@@ -121,10 +124,11 @@ export default function SettingsPage() {
       const { error } = await supabase.from('app_settings').upsert(upserts)
       if (error) throw error
 
-      triggerToast('success', 'Pengaturan AI dan sistem berhasil disimpan.')
+      await updateGlobalLocale(locale as 'id' | 'en')
+      triggerToast('success', t('msg_settings_saved'))
       fetchSettings()
     } catch (err: any) {
-      triggerToast('error', err.message || 'Gagal menyimpan pengaturan.')
+      triggerToast('error', err.message || t('msg_settings_failed'))
     } finally {
       setSaving(false)
     }
@@ -133,13 +137,13 @@ export default function SettingsPage() {
   const modelOptions = provider === 'gemini' 
     ? [
         { label: 'Gemini 2.5 Flash (Default)', value: 'gemini-2.5-flash' },
-        { label: 'Gemini 2.5 Pro (Lebih Pintar / Lambat)', value: 'gemini-2.5-pro' },
+        { label: currentLocale === 'id' ? 'Gemini 2.5 Pro (Lebih Pintar / Lambat)' : 'Gemini 2.5 Pro (Smarter / Slower)', value: 'gemini-2.5-pro' },
         { label: 'Gemini 1.5 Flash (Legacy)', value: 'gemini-1.5-flash' }
       ]
     : [
         { label: 'Llama 3.1 8B Instant (Default)', value: 'llama-3.1-8b-instant' },
         { label: 'Llama 3 8B (Legacy)', value: 'llama3-8b-8192' },
-        { label: 'Llama 3.1 70B (Lebih Pintar)', value: 'llama-3.1-70b-versatile' }
+        { label: currentLocale === 'id' ? 'Llama 3.1 70B (Lebih Pintar)' : 'Llama 3.1 70B (Smarter)', value: 'llama-3.1-70b-versatile' }
       ]
 
   const handleProviderChange = (prov: string) => {
@@ -150,77 +154,75 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       {/* Primary Content Header (Height: 64px, flex items-center justify-between) */}
-      <div className="h-16 flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+      <div className="h-16 flex items-center justify-between border-b border-black/10 pb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight">Pengaturan Sistem</h2>
-          <div className="h-4 w-px bg-[#E2E8F0]" />
-          <span className="text-sm font-medium text-slate-500">Konfigurasi</span>
+          <h2 className="text-xl font-bold text-black tracking-tighter uppercase font-editorial-headline">{t('settings_title')}</h2>
+          <div className="h-4 w-px bg-black/10" />
+          <span className="text-xs font-medium text-neutral-500 font-mono tracking-wider">{t('settings_subtitle')}</span>
         </div>
       </div>
 
       {/* Messages */}
       {successMsg && (
-        <div className="bg-green-50 border border-green-100 text-green-800 text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-card font-medium">
-          <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-500" />
+        <div className="bg-white border border-black text-black text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-none font-medium">
+          <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-black" />
           <span>{successMsg}</span>
         </div>
       )}
       {errorMsg && (
-        <div className="bg-red-50 border border-red-100 text-red-800 text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-card font-medium">
-          <X className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-500" />
+        <div className="bg-white border border-black text-black text-xs px-4 py-3 rounded-2xl flex gap-2.5 shadow-none font-bold">
+          <X className="w-4 h-4 mt-0.5 flex-shrink-0 text-black" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {loading ? (
         <div className="h-64 flex justify-center items-center">
-          <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+          <Loader2 className="w-6 h-6 text-black animate-spin" />
         </div>
       ) : (
-        <form onSubmit={handleSave} className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-6 shadow-card transition-all duration-200 hover:border-blue-200">
+        <form onSubmit={handleSave} className="bg-white border border-black/10 rounded-2xl p-6 space-y-6 shadow-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/30">
           
           {/* AI Settings Section */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-slate-100">
+            <h3 className="text-xs font-bold text-black uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-black/10 font-mono">
               <Sparkles className="w-4 h-4" />
-              Kredensial Kecerdasan Buatan (AI)
+              {t('settings_sec_ai')}
             </h3>
 
             {/* Provider Select */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                Penyedia Model AI (Provider)
+              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                {t('label_provider')}
               </label>
-              <select
+              <CustomSelect
+                options={[
+                  { value: 'gemini', label: 'Google Gemini AI' },
+                  { value: 'groq', label: 'Groq Cloud API' }
+                ]}
                 value={provider}
-                onChange={(e) => handleProviderChange(e.target.value)}
-                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors font-semibold"
-              >
-                <option value="gemini">Google Gemini AI</option>
-                <option value="groq">Groq Cloud API</option>
-              </select>
+                onChange={handleProviderChange}
+                isSearchable={false}
+              />
             </div>
 
             {/* Model Select */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                Model AI yang Digunakan
+              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                {t('label_model')}
               </label>
-              <select
+              <CustomSelect
+                options={modelOptions}
                 value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors font-semibold"
-              >
-                {modelOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+                onChange={(val) => setModel(val)}
+                isSearchable={false}
+              />
             </div>
 
             {/* API Key Input */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-slate-400" />
+              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5 font-mono">
+                <Key className="w-3.5 h-3.5 text-neutral-400" />
                 API Key
               </label>
               <div className="relative">
@@ -229,59 +231,64 @@ export default function SettingsPage() {
                   value={apiKey}
                   onChange={(e) => handleKeyChange(e.target.value)}
                   placeholder={provider === 'gemini' ? 'AIzaSy...' : 'gsk_...'}
-                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl py-3 pl-4 pr-12 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors font-mono"
+                  className="form-input-premium pr-12 font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black p-1"
                 >
                   {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed font-medium">
-                Kredensial API Key ini disimpan aman di database server Supabase Anda dan tidak pernah dipublikasikan keluar.
+              <p className="text-[10px] text-neutral-550 mt-1.5 leading-relaxed font-medium">
+                {currentLocale === 'id' 
+                  ? 'Kredensial API Key ini disimpan aman di database server Supabase Anda dan tidak pernah dipublikasikan keluar.' 
+                  : 'This API Key is stored securely in your Supabase database and is never exposed publicly.'}
               </p>
             </div>
           </div>
 
           {/* System settings Section */}
           <div className="space-y-4 pt-4">
-            <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-slate-100">
+            <h3 className="text-xs font-bold text-black uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-black/10 font-mono">
               <Languages className="w-4 h-4" />
-              Sistem & Kontak
+              {t('settings_sec_system')}
             </h3>
 
             {/* Locale */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                Bahasa Default Dashboard
+              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                {t('label_locale')}
               </label>
-              <select
+              <CustomSelect
+                options={[
+                  { value: 'id', label: currentLocale === 'id' ? 'Bahasa Indonesia' : 'Indonesian' },
+                  { value: 'en', label: 'English' }
+                ]}
                 value={locale}
-                onChange={(e) => setLocale(e.target.value)}
-                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors font-semibold"
-              >
-                <option value="id">Bahasa Indonesia</option>
-                <option value="en">English</option>
-              </select>
+                onChange={(val) => setLocale(val)}
+                isSearchable={false}
+              />
             </div>
 
             {/* WA Number */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                <Smartphone className="w-3.5 h-3.5 text-slate-400" />
-                Nomor WhatsApp Admin Guru
+              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5 font-mono">
+                <Smartphone className="w-3.5 h-3.5 text-neutral-400" />
+                {t('label_wa')}
               </label>
               <input
                 type="text"
                 value={waNumber}
                 onChange={(e) => setWaNumber(e.target.value)}
                 placeholder="Contoh: 628123456789"
-                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 text-slate-800 text-sm h-[42px] focus:outline-none focus:border-blue-400 transition-colors"
+                className="form-input-premium"
               />
-              <p className="text-[10px] text-slate-400 mt-1.5 font-medium">
-                Nomor ini digunakan untuk mengirimkan salinan laporan progres murid langsung via WA.
+              <p className="text-[10px] text-neutral-555 mt-1.5 font-medium">
+                {currentLocale === 'id'
+                  ? 'Nomor ini digunakan untuk mengirimkan salinan laporan progres murid langsung via WA.'
+                  : 'This number is used to send student progress report copies directly via WhatsApp.'}
               </p>
             </div>
           </div>
@@ -290,17 +297,17 @@ export default function SettingsPage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white text-xs font-bold uppercase tracking-wider py-3.5 rounded-xl shadow-md shadow-blue-200/40 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+            className="w-full bg-black hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 text-white text-xs font-bold uppercase tracking-wider py-3.5 rounded-xl shadow-none flex items-center justify-center gap-2 cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
           >
             {saving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Menyimpan Pengaturan...</span>
+                <span>{currentLocale === 'id' ? 'Menyimpan Pengaturan...' : 'Saving Settings...'}</span>
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>Simpan Pengaturan</span>
+                <span>{currentLocale === 'id' ? 'Simpan Pengaturan' : 'Save Settings'}</span>
               </>
             )}
           </button>

@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { syncPendingReports } from '@/lib/schedule/syncPendingReports'
+import CustomSelect from '@/components/CustomSelect'
+import CustomDatePicker from '@/components/CustomDatePicker'
+import Logo from '@/components/Logo'
+import { useTranslation } from '@/components/LocaleProvider'
 import { 
   Sparkles, 
   Send, 
@@ -19,12 +23,14 @@ import {
   Clock,
   BookOpen,
   History,
-  GraduationCap
+  GraduationCap,
+  X
 } from 'lucide-react'
 
 export default function LaporanBuilderPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { t, locale } = useTranslation()
   const [userId, setUserId] = useState<string | null>(null)
   
   // Data States
@@ -319,118 +325,119 @@ export default function LaporanBuilderPage() {
   // Calculate total pending reports for header counter
   const totalPendingReportsCount = Object.values(pendingReportsMap).reduce((acc, curr) => acc + curr.length, 0)
 
+  const studentOptions = students.map(s => ({ value: s.id, label: `${s.name} (${s.subject})` }))
+
+  const languageOptions = [
+    { value: 'id', label: 'Bahasa Indonesia' },
+    { value: 'en', label: 'English (EN)' }
+  ]
+
+  const reportTypeOptions = [
+    { value: 'full', label: 'Laporan Lengkap' },
+    { value: 'overview', label: 'Hanya Ringkasan' }
+  ]
+
   return (
     <div className="space-y-6">
       
       {/* 1. PRIMARY CONTENT HEADER (Height: 64px, flex items-center justify-between) */}
-      <div className="h-16 flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+      <div className="h-16 flex items-center justify-between border-b border-black/10 pb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight">Buat Laporan AI</h2>
+          <Logo className="w-6 h-6 text-black" />
+          <h2 className="text-xl font-bold text-black tracking-tighter uppercase font-editorial-headline">{t('header_create_ai')}</h2>
         </div>
 
         {/* Button group: secondary outline + primary blue */}
         <div className="flex items-center gap-2.5">
           <Link
             href="/dataset"
-            className="h-10 px-4 rounded-xl border border-[#E2E8F0] hover:bg-slate-50 transition-colors text-xs font-semibold text-slate-600 flex items-center gap-1.5 cursor-pointer bg-white shadow-sm"
+            className="h-10 px-4 rounded-xl border border-black/10 hover:bg-neutral-100 transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] text-xs font-semibold text-black flex items-center gap-1.5 cursor-pointer bg-white"
           >
-            <BookOpen className="w-4 h-4 text-slate-400" />
-            <span>Dataset Gaya</span>
+            <BookOpen className="w-4 h-4 text-neutral-400" />
+            <span>{t('nav_dataset')}</span>
           </Link>
           
           <Link
             href="/history"
-            className="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 transition-all duration-200 text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-200/50"
+            className="h-10 px-4 rounded-xl bg-black hover:bg-neutral-800 transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer"
           >
             <History className="w-4 h-4" />
-            <span>Lihat Riwayat</span>
+            <span>{locale === 'id' ? 'Lihat Riwayat' : 'View History'}</span>
           </Link>
         </div>
       </div>
 
       {datasetCount === 0 && (
-        <div className="bg-amber-50 border border-amber-100/60 text-amber-800 text-xs px-4 py-3 rounded-2xl flex gap-3 items-start shadow-card">
-          <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+        <div className="bg-white border border-black text-black text-xs px-4 py-3 rounded-2xl flex gap-3 items-start shadow-none">
+          <AlertCircle className="w-4 h-4 text-black mt-0.5 shrink-0" />
           <div>
-            <span className="font-bold">Dataset Gaya Kosong</span>
-            <p className="mt-0.5 text-slate-600">
-              Silakan tambahkan minimal 1 contoh di tab <strong>Dataset Gaya</strong> agar AI memahami karakter tulisan Anda.
+            <span className="font-bold">{locale === 'id' ? 'Dataset Gaya Kosong' : 'Writing Style Dataset Empty'}</span>
+            <p className="mt-0.5 text-neutral-500">
+              {locale === 'id' 
+                ? 'Silakan tambahkan minimal 1 contoh di tab Dataset Gaya agar AI memahami karakter tulisan Anda.' 
+                : 'Please add at least 1 writing example in the Writing Style tab so the AI can learn your writing tone.'}
             </p>
           </div>
         </div>
       )}
 
       {statusMsg && (
-        <div className={`border text-xs px-4 py-3 rounded-2xl flex gap-3 items-start shadow-card ${
-          statusMsg.type === 'success' 
-            ? 'bg-green-50 border-green-100 text-green-800' 
-            : 'bg-red-50 border-red-100 text-red-800'
-        }`}>
-          {statusMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-green-500" /> : <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />}
+        <div className={`border text-xs px-4 py-3 rounded-2xl flex gap-3 items-start shadow-none bg-white border-black text-black`}>
+          {statusMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-black" /> : <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-black" />}
           <span className="font-semibold">{statusMsg.text}</span>
         </div>
       )}
 
-      {/* 2. FILTER & SEARCH BAR (Horizontal layout, 16px padding, white, border-1px, py-2.5 inputs h-42px) */}
-      <div className="bg-white border border-[#E2E8F0] p-4 rounded-2xl shadow-card flex flex-col md:flex-row gap-4 items-center justify-between">
+      {/* 2. FILTER & SEARCH BAR (Responsive grid, 16px padding, white, border-1px, py-2.5 inputs h-42px) */}
+      <div className="bg-card border border-border-color p-4 rounded-2xl shadow-none grid grid-cols-1 lg:grid-cols-12 gap-4 w-full items-center">
         
-        {/* Student Selector: flex-1, icon-prefix, bg-slate-50, 12px rounded-xl */}
-        <div className="relative flex-1 w-full">
-          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+        {/* Student Selector: col-span-5, icon-prefix */}
+        <div className="relative w-full lg:col-span-5">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary z-10">
             <GraduationCap className="w-4 h-4" />
           </div>
-          <select
+          <CustomSelect
+            options={studentOptions}
             value={selectedStudentId}
-            onChange={(e) => handleStudentChange(e.target.value)}
-            className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl pl-10 pr-4 py-2.5 h-[42px] text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-300 transition-colors"
-          >
-            <option value="">-- Pilih Murid Les --</option>
-            {students.map(s => (
-              <option key={s.id} value={s.id}>
-                {s.name} ({s.subject})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Date Picker: bg-slate-50, prefix */}
-        <div className="relative w-full md:w-auto md:min-w-[170px]">
-          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-            <Calendar className="w-4 h-4" />
-          </div>
-          <input
-            type="date"
-            value={reportDate}
-            onChange={(e) => setReportDate(e.target.value)}
-            className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl pl-10 pr-4 py-2.5 h-[42px] text-sm text-slate-700 focus:outline-none focus:border-blue-300 transition-colors"
+            onChange={handleStudentChange}
+            placeholder={t('placeholder_student')}
+            className="pl-10"
           />
         </div>
 
-        {/* Language select: min-width 140px, bold 14px text */}
-        <div className="relative w-full md:w-auto md:min-w-[150px]">
-          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-            <Languages className="w-4 h-4" />
-          </div>
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as any)}
-            className="w-full bg-white border border-[#E2E8F0] rounded-xl pl-10 pr-4 py-2.5 h-[42px] text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-300 transition-colors"
-          >
-            <option value="id">Bahasa Indonesia</option>
-            <option value="en">English (EN)</option>
-          </select>
+        {/* Date Picker: col-span-3 */}
+        <div className="relative w-full lg:col-span-3">
+          <CustomDatePicker
+            value={reportDate}
+            onChange={(val) => setReportDate(val)}
+            placeholder={t('placeholder_date')}
+          />
         </div>
 
-        {/* Summary type select: min-width 140px, bold 14px text */}
-        <div className="relative w-full md:w-auto md:min-w-[150px]">
-          <select
+        {/* Language select: col-span-2, icon-prefix */}
+        <div className="relative w-full lg:col-span-2">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary z-10">
+            <Languages className="w-4 h-4" />
+          </div>
+          <CustomSelect
+            options={languageOptions}
+            value={language}
+            onChange={(val) => setLanguage(val as any)}
+            placeholder={t('placeholder_lang')}
+            isSearchable={false}
+            className="pl-10"
+          />
+        </div>
+
+        {/* Summary type select: col-span-2 */}
+        <div className="relative w-full lg:col-span-2">
+          <CustomSelect
+            options={reportTypeOptions}
             value={reportType}
-            onChange={(e) => setReportType(e.target.value as any)}
-            className="w-full bg-white border border-[#E2E8F0] rounded-xl px-4 py-2.5 h-[42px] text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-300 transition-colors"
-          >
-            <option value="full">Laporan Lengkap</option>
-            <option value="overview">Hanya Ringkasan</option>
-          </select>
+            onChange={(val) => setReportType(val as any)}
+            placeholder={t('placeholder_type')}
+            isSearchable={false}
+          />
         </div>
 
       </div>
@@ -439,129 +446,175 @@ export default function LaporanBuilderPage() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
         
         {/* CARD 1: INPUT DETAILS (padding p-6, rounded-2xl, card-shadow) */}
-        <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-card space-y-5 transition-all duration-200 hover:border-blue-200">
+        <section className="bg-card border border-border-color rounded-2xl p-6 shadow-none space-y-5 transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border-color/60">
           {/* Card Header: 48px avatar, title, subtitle, top-right status badge */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-[#EFF6FF] text-blue-600 flex items-center justify-center font-bold text-sm">
+              <div className="w-12 h-12 rounded-full bg-primary text-background flex items-center justify-center font-bold text-sm font-mono uppercase">
                 {currentStudent ? currentStudent.name.substring(0, 2).toUpperCase() : 'LS'}
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900 leading-tight">
-                  {currentStudent ? currentStudent.name : 'Pilih Murid'}
+                <h3 className="text-sm font-bold text-black leading-tight">
+                  {currentStudent ? currentStudent.name : (locale === 'id' ? 'Pilih Murid' : 'Select Student')}
                 </h3>
-                <p className="text-xs text-slate-400 font-medium">
-                  {currentStudent ? currentStudent.subject : 'Pelajaran les privat'}
+                <p className="text-xs text-neutral-550 font-medium">
+                  {currentStudent ? currentStudent.subject : (locale === 'id' ? 'Pelajaran les privat' : 'Private tutoring subject')}
                 </p>
               </div>
             </div>
 
             {/* Status Badge: Compact, color-coded, 10px bold uppercase */}
-            <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-50 text-green-700 border border-green-100">
-              MEETING {meetingNumber}
+            <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-neutral-100 text-black border border-black/10 font-mono">
+              {locale === 'id' ? 'PERTEMUAN' : 'MEETING'} {meetingNumber}
             </span>
           </div>
 
           {/* Form Body */}
-          <div className="space-y-4 pt-2">
+          <div className="space-y-5 pt-2">
 
             {/* Manual Meeting Number & Date Override */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                  Pertemuan Ke-
+              <div className="border border-black/10 focus-within:border-black focus-within:shadow-[0_0_0_1px_#000000] rounded-xl p-3 bg-white transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20">
+                <label className="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider font-mono mb-1">
+                  {locale === 'id' ? 'Pertemuan Ke-' : 'Meeting Number'}
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs">#</span>
+                <div className="relative flex items-center">
+                  <span className="text-neutral-400 font-mono text-xs mr-1">#</span>
                   <input
                     type="number"
                     min={1}
                     required
                     value={meetingNumber}
                     onChange={(e) => setMeetingNumber(Number(e.target.value))}
-                    className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl pl-7 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-400 h-9 font-semibold"
+                    className="w-full bg-transparent border-0 p-0 text-xs text-black font-semibold focus:ring-0 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                  Tanggal Laporan
+              <div className="border border-black/10 focus-within:border-black focus-within:shadow-[0_0_0_1px_#000000] rounded-xl p-3 bg-white transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20">
+                <label className="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider font-mono mb-1">
+                  {locale === 'id' ? 'Tanggal Laporan' : 'Report Date'}
                 </label>
                 <input
                   type="date"
                   required
                   value={reportDate}
                   onChange={(e) => setReportDate(e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-400 h-9 font-semibold"
+                  className="w-full bg-transparent border-0 p-0 text-xs text-black font-semibold focus:ring-0 focus:outline-none"
                 />
               </div>
             </div>
 
             {/* Material Area */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                Materi Belajar Hari Ini
+            <div className="border border-black/10 focus-within:border-black focus-within:shadow-[0_0_0_1px_#000000] rounded-xl p-4 bg-white transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20">
+              <label className="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider font-mono mb-1.5">
+                {t('label_material')}
               </label>
               <textarea
                 required
                 rows={3}
                 value={materi}
                 onChange={(e) => setMateri(e.target.value)}
-                placeholder="Masukkan topik, konsep, atau proyek yang dikerjakan murid..."
-                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-400 transition-colors resize-y leading-relaxed font-medium"
+                placeholder={t('placeholder_material')}
+                className="w-full bg-transparent border-0 p-0 text-xs text-black leading-relaxed focus:ring-0 focus:outline-none resize-y min-h-[70px]"
               />
             </div>
 
             {/* Behavior Area */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                Behavior / Observasi Murid
+            <div className="border border-black/10 focus-within:border-black focus-within:shadow-[0_0_0_1px_#000000] rounded-xl p-4 bg-white transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20">
+              <label className="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider font-mono mb-1.5">
+                {t('label_behavior')}
               </label>
               <textarea
                 required
                 rows={3}
                 value={behavior}
                 onChange={(e) => setBehavior(e.target.value)}
-                placeholder="Ketik bagaimana fokus murid, keaktifan, kendala, atau pencapaian sikapnya..."
-                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-400 transition-colors resize-y leading-relaxed font-medium"
+                placeholder={t('placeholder_behavior')}
+                className="w-full bg-transparent border-0 p-0 text-xs text-black leading-relaxed focus:ring-0 focus:outline-none resize-y min-h-[70px]"
               />
             </div>
 
             {/* Optional Image Upload */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
-                Lampirkan Foto Progres (Opsional)
+              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5 font-mono">
+                <ImageIcon className="w-3.5 h-3.5 text-neutral-400" />
+                {locale === 'id' ? 'Foto Progres (Opsional)' : 'Progress Photo (Optional)'}
               </label>
               <input
                 type="file"
                 accept="image/*"
                 ref={fileInputRef}
                 onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
-                className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-2.5 text-xs text-slate-500 focus:outline-none file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wider file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer"
+                className="hidden"
               />
+              
+              {!selectedImage ? (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border border-dashed border-black/10 hover:border-black/30 bg-neutral-50/30 hover:bg-neutral-50/85 rounded-xl p-6 text-center cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] group"
+                >
+                  <ImageIcon className="w-6 h-6 text-neutral-400 mx-auto mb-2 group-hover:text-black transition-colors" />
+                  <p className="text-xs font-bold text-black font-mono uppercase tracking-wider">
+                    {locale === 'id' ? 'Pilih Gambar' : 'Choose Image'}
+                  </p>
+                  <p className="text-[10px] text-neutral-400 mt-1">
+                    {locale === 'id' ? 'Klik untuk mencari foto dari perangkat' : 'Click to select photo from device'}
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-3 border border-black/10 bg-white rounded-xl shadow-none">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden border border-black/5 bg-neutral-50 shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={URL.createObjectURL(selectedImage)} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover filter grayscale contrast-115"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-black truncate max-w-[150px] sm:max-w-[250px]">
+                        {selectedImage.name}
+                      </p>
+                      <p className="text-[10px] text-neutral-450 font-mono font-bold">
+                        {(selectedImage.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedImage(null)
+                      if (fileInputRef.current) fileInputRef.current.value = ''
+                    }}
+                    className="p-1.5 text-neutral-400 hover:text-black rounded-lg hover:bg-neutral-100 transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>
 
           {/* Card Footer: Generate trigger Button */}
-          <div className="pt-2 border-t border-[#E2E8F0]">
+          <div className="pt-2 border-t border-border-color">
             <button
               type="submit"
               onClick={handleGenerate}
               disabled={generating || !selectedStudentId}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 disabled:text-slate-100 text-white text-xs font-bold uppercase tracking-wider py-3 rounded-xl shadow-md shadow-blue-200/40 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+              className="w-full bg-primary hover:bg-primary/80 disabled:bg-neutral-200 disabled:text-neutral-450 text-background text-xs font-bold uppercase tracking-wider py-3 rounded-xl shadow-none flex items-center justify-center gap-2 cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98]"
             >
               {generating ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Menganalisis & Menyusun Laporan AI...</span>
+                  <Loader2 className="w-4 h-4 animate-spin text-background" />
+                  <span>{t('btn_generating')}</span>
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
-                  <span>Generate Draft Laporan AI</span>
+                  <Send className="w-4 h-4 text-background" />
+                  <span>{t('btn_generate')}</span>
                 </>
               )}
             </button>
@@ -569,27 +622,29 @@ export default function LaporanBuilderPage() {
         </section>
 
         {/* CARD 2: EDITOR & SAVE (padding p-6, rounded-2xl, card-shadow) */}
-        <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-card space-y-5 transition-all duration-200 hover:border-blue-200">
+        <section className="bg-card border border-border-color rounded-2xl p-6 shadow-none space-y-5 transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border-color/60">
           
           {/* Card Header: 48px avatar, title, subtitle, top-right status badge */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-slate-50 border border-[#E2E8F0] text-slate-400 flex items-center justify-center font-bold">
-                <Sparkles className="w-5 h-5 text-blue-600 animate-pulse" />
+              <div className="w-12 h-12 rounded-full bg-primary text-background flex items-center justify-center font-bold">
+                <Sparkles className="w-5 h-5 text-background animate-pulse" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900 leading-tight">Draf Hasil Laporan</h3>
-                <p className="text-xs text-slate-400 font-medium">
-                  {generatedText ? 'Draf AI berhasil dibuat' : 'Belum ada draf terbuat'}
+                <h3 className="text-sm font-bold text-text-primary leading-tight">{locale === 'id' ? 'Draf Hasil Laporan' : 'Draft Report Result'}</h3>
+                <p className="text-xs text-text-secondary font-medium">
+                  {generatedText 
+                    ? (locale === 'id' ? 'Draf AI berhasil dibuat' : 'AI draft created successfully') 
+                    : (locale === 'id' ? 'Belum ada draf terbuat' : 'No draft created yet')}
                 </p>
               </div>
             </div>
 
             {/* Status Badge */}
-            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider font-mono ${
               generatedText 
-                ? 'bg-green-50 text-green-700 border border-green-100' 
-                : 'bg-red-50 text-red-700 border border-red-100'
+                ? 'bg-primary text-background' 
+                : 'border border-border-color text-text-primary bg-card'
             }`}>
               {generatedText ? 'READY' : 'EMPTY'}
             </span>
@@ -598,21 +653,25 @@ export default function LaporanBuilderPage() {
           {/* Form Body / Content Area */}
           <div className="space-y-4 min-h-[295px] flex flex-col justify-between">
             {!generatedText && !generating && (
-              <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-slate-400 border border-dashed border-[#E2E8F0] rounded-xl min-h-[200px]">
-                <Sparkles className="w-8 h-8 text-slate-300 mb-2" />
-                <span className="text-xs font-bold text-slate-500">Menunggu Pembuatan Laporan</span>
-                <p className="text-[10px] text-slate-400 mt-1 max-w-[250px]">
-                  Pilih murid dan isi deskripsi materi di sebelah kiri, lalu klik tombol Generate.
+              <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-text-secondary border border-dashed border-border-color rounded-xl min-h-[200px]">
+                <Sparkles className="w-8 h-8 text-text-secondary/60 mb-2" />
+                <span className="text-xs font-bold text-text-secondary font-mono">{locale === 'id' ? 'Menunggu Pembuatan Laporan' : 'Waiting for Report Generation'}</span>
+                <p className="text-[10px] text-text-secondary/80 mt-1 max-w-[250px]">
+                  {locale === 'id' 
+                    ? 'Pilih murid dan isi deskripsi materi di sebelah kiri, lalu klik tombol Generate.' 
+                    : 'Select a student and fill out the lesson details on the left, then click Generate.'}
                 </p>
               </div>
             )}
 
             {generating && (
-              <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-slate-400 bg-slate-55/20 border border-dashed border-[#E2E8F0] rounded-xl min-h-[200px] space-y-2">
-                <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
-                <span className="text-xs font-bold text-slate-500">Memproses...</span>
-                <p className="text-[10px] text-slate-400 mt-1 max-w-[220px]">
-                  AI sedang mencocokkan materi dengan contoh dataset Anda.
+              <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-text-secondary bg-card border border-dashed border-border-color rounded-xl min-h-[200px] space-y-2">
+                <Loader2 className="w-7 h-7 text-text-primary animate-spin" />
+                <span className="text-xs font-bold text-text-secondary font-mono">{locale === 'id' ? 'Memproses...' : 'Processing...'}</span>
+                <p className="text-[10px] text-text-secondary/80 mt-1 max-w-[220px]">
+                  {locale === 'id' 
+                    ? 'AI sedang mencocokkan materi dengan contoh dataset Anda.' 
+                    : 'AI is matching lesson details with your writing style dataset.'}
                 </p>
               </div>
             )}
@@ -620,8 +679,8 @@ export default function LaporanBuilderPage() {
             {generatedText && (
               <div className="space-y-4 flex-1 flex flex-col justify-between">
                 {warningMsg && (
-                  <div className="bg-amber-50 border border-amber-100/60 text-amber-700 text-[10px] px-3.5 py-2 rounded-xl flex gap-2 font-semibold">
-                    <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500" />
+                  <div className="bg-card border border-border-color text-text-primary text-[10px] px-3.5 py-2 rounded-xl flex gap-2 font-semibold">
+                    <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-text-primary" />
                     <span>{warningMsg}</span>
                   </div>
                 )}
@@ -632,32 +691,31 @@ export default function LaporanBuilderPage() {
                     rows={10}
                     value={generatedText}
                     onChange={(e) => setGeneratedText(e.target.value)}
-                    className="w-full flex-1 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 text-xs text-slate-700 font-mono leading-relaxed focus:outline-none focus:border-blue-400 resize-y"
+                    className="w-full flex-1 bg-card border border-border-color rounded-xl p-4 text-xs text-text-primary font-mono leading-relaxed focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_var(--primary)] resize-y"
                   />
                 </div>
-                {/* Placeholder empty gap */}
               </div>
             )}
           </div>
 
           {/* Card Footer: Save Trigger Button */}
           {generatedText && (
-            <div className="pt-2 border-t border-[#E2E8F0]">
+            <div className="pt-2 border-t border-border-color">
               <button
                 type="button"
                 onClick={handleSaveToHistory}
                 disabled={saving}
-                className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-300 text-white text-xs font-bold uppercase tracking-wider py-3 rounded-xl shadow-md shadow-blue-200/40 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+                className="w-full bg-primary hover:bg-primary/80 disabled:bg-neutral-200 disabled:text-neutral-450 text-background text-xs font-bold uppercase tracking-wider py-3 rounded-xl shadow-none flex items-center justify-center gap-2 cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98]"
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Menyimpan Laporan...</span>
+                    <Loader2 className="w-4 h-4 animate-spin text-background" />
+                    <span>{t('btn_saving')}</span>
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4" />
-                    <span>Simpan Ke Riwayat Laporan</span>
+                    <Save className="w-4 h-4 text-background" />
+                    <span>{t('btn_save')}</span>
                   </>
                 )}
               </button>
