@@ -235,6 +235,19 @@ export default function LaporanBuilderPage() {
     setStatusMsg(null)
 
     try {
+      let currentUserId = userId
+      if (!currentUserId) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          currentUserId = user.id
+          setUserId(user.id)
+        }
+      }
+
+      if (!currentUserId) {
+        throw new Error(locale === 'id' ? 'Sesi berakhir, silakan login kembali.' : 'Session expired, please login again.')
+      }
+
       let imageUrl: string | null = null
 
       if (selectedImage) {
@@ -267,7 +280,7 @@ export default function LaporanBuilderPage() {
         behavior,
         content: generatedText,
         image_url: imageUrl,
-        user_id: userId
+        user_id: currentUserId
       })
 
       if (insertErr) {

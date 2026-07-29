@@ -112,13 +112,26 @@ export default function DatasetPage() {
     setSubmitting(true)
 
     try {
+      let currentUserId = userId
+      if (!currentUserId) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          currentUserId = user.id
+          setUserId(user.id)
+        }
+      }
+
+      if (!currentUserId) {
+        throw new Error(locale === 'id' ? 'Sesi berakhir, silakan login kembali.' : 'Session expired, please login again.')
+      }
+
       const { error } = await supabase
         .from('dataset_entries')
         .insert({
           language: styleLang,
           section_type: styleSection,
           body: styleBody.trim(),
-          user_id: userId
+          user_id: currentUserId
         })
 
       if (error) throw error
@@ -153,13 +166,26 @@ export default function DatasetPage() {
     setSubmitting(true)
 
     try {
+      let currentUserId = userId
+      if (!currentUserId) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          currentUserId = user.id
+          setUserId(user.id)
+        }
+      }
+
+      if (!currentUserId) {
+        throw new Error(locale === 'id' ? 'Sesi berakhir, silakan login kembali.' : 'Session expired, please login again.')
+      }
+
       const { error } = await supabase
         .from('recommendation_datasets')
         .insert({
           language: recLang,
           category: recCategory,
           body: recBody.trim(),
-          user_id: userId
+          user_id: currentUserId
         })
 
       if (error) throw error

@@ -144,6 +144,19 @@ export default function StudentsAndSchedulesPage() {
     setErrorMsg('')
 
     try {
+      let currentUserId = userId
+      if (!currentUserId) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          currentUserId = user.id
+          setUserId(user.id)
+        }
+      }
+
+      if (!currentUserId) {
+        throw new Error(locale === 'id' ? 'Sesi berakhir, silakan login kembali.' : 'Session expired, please login again.')
+      }
+
       if (editingStudent) {
         // Edit
         const { error } = await supabase
@@ -167,7 +180,7 @@ export default function StudentsAndSchedulesPage() {
             subject: studentSubject,
             first_meeting_date: studentFirstMeeting || null,
             meeting_count: studentMeetingCount,
-            user_id: userId
+            user_id: currentUserId
           })
 
         if (error) throw error
@@ -232,6 +245,19 @@ export default function StudentsAndSchedulesPage() {
     }
 
     try {
+      let currentUserId = userId
+      if (!currentUserId) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          currentUserId = user.id
+          setUserId(user.id)
+        }
+      }
+
+      if (!currentUserId) {
+        throw new Error(locale === 'id' ? 'Sesi berakhir, silakan login kembali.' : 'Session expired, please login again.')
+      }
+
       let scheduleId = editingSchedule?.id
 
       if (editingSchedule) {
@@ -259,7 +285,7 @@ export default function StudentsAndSchedulesPage() {
             start_time: schedStart,
             end_time: schedEnd,
             label: schedLabel,
-            user_id: userId
+            user_id: currentUserId
           })
           .select()
           .single()
@@ -279,8 +305,8 @@ export default function StudentsAndSchedulesPage() {
       }
 
       // Sync pending reports
-      if (userId) {
-        await syncPendingReports(supabase, userId)
+      if (currentUserId) {
+        await syncPendingReports(supabase, currentUserId)
       }
 
       triggerToast('success', 'Jadwal belajar berhasil disimpan.')
