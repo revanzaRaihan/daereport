@@ -159,3 +159,15 @@ CREATE POLICY "Allow authenticated users to delete app_settings"
 -- karena alasan keamanan, role default postgres di SQL Editor dilarang mengubah tabel skema storage secara langsung.
 
 
+-- =====================================================================
+-- LANGKAH D: SETUP RLS POLICIES UNTUK PUBLIC/ANONYMOUS READ PERMISSIONS
+-- =====================================================================
+
+DROP POLICY IF EXISTS "Allow anonymous read on students" ON public.students;
+CREATE POLICY "Allow anonymous read on students" ON public.students FOR SELECT TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS "Allow anonymous read on reports" ON public.reports;
+CREATE POLICY "Allow anonymous read on reports" ON public.reports FOR SELECT TO anon, authenticated USING (true);
+
+
+
