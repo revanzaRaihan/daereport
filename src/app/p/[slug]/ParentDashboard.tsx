@@ -7,7 +7,9 @@ import {
   ChevronDown, 
   FileText, 
   GraduationCap,
-  ArrowRight
+  ArrowRight,
+  Copy,
+  Check
 } from 'lucide-react'
 
 export interface ParsedReport {
@@ -39,11 +41,18 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
   const [feedbackText, setFeedbackText] = useState('')
   const [sendingFeedback, setSendingFeedback] = useState(false)
   const [feedbackStatus, setFeedbackStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [copiedReportId, setCopiedReportId] = useState<string | null>(null)
 
   useEffect(() => {
     document.documentElement.classList.remove('dark')
     document.documentElement.style.colorScheme = 'light'
   }, [])
+
+  const handleCopyText = (text: string, reportId: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedReportId(reportId)
+    setTimeout(() => setCopiedReportId(null), 2000)
+  }
 
   const handleSendFeedback = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -149,9 +158,27 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
 
               {/* Evaluasi Belajar Only */}
               <div className="space-y-2">
-                <span className="text-[10px] font-bold text-[#10AF13] uppercase tracking-widest block">
-                  Evaluasi Belajar
-                </span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-[#10AF13] uppercase tracking-widest block">
+                    Evaluasi Belajar
+                  </span>
+                  <button
+                    onClick={() => handleCopyText(latestReport.teachersNote, latestReport.id)}
+                    className="flex items-center gap-1 text-[10px] font-semibold text-neutral-400 hover:text-[#10AF13] transition-colors cursor-pointer"
+                  >
+                    {copiedReportId === latestReport.id ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-[#10AF13]" />
+                        <span className="text-[#10AF13]">Disalin</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Salin</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <p className="text-neutral-800 text-sm leading-relaxed bg-neutral-50 border border-neutral-100 p-5 rounded-2xl whitespace-pre-wrap">
                   {latestReport.teachersNote}
                 </p>
@@ -224,9 +251,27 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                         
                         {/* Evaluasi Belajar Only */}
                         <div className="space-y-1.5">
-                          <span className="text-[9px] font-bold text-[#10AF13] uppercase tracking-widest block">
-                            Evaluasi Belajar
-                          </span>
+                          <div className="flex justify-between items-center">
+                            <span className="text-[9px] font-bold text-[#10AF13] uppercase tracking-widest block">
+                              Evaluasi Belajar
+                            </span>
+                            <button
+                              onClick={() => handleCopyText(report.teachersNote, report.id)}
+                              className="flex items-center gap-1 text-[9px] font-semibold text-neutral-400 hover:text-[#10AF13] transition-colors cursor-pointer"
+                            >
+                              {copiedReportId === report.id ? (
+                                <>
+                                  <Check className="w-3 h-3 text-[#10AF13]" />
+                                  <span className="text-[#10AF13]">Disalin</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Salin</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
                           <p className="text-neutral-800 text-xs leading-relaxed bg-white border border-neutral-200 p-4 rounded-xl whitespace-pre-wrap">
                             {report.teachersNote}
                           </p>
