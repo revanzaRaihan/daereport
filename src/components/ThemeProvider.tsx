@@ -14,6 +14,14 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    if (window.location.pathname.startsWith('/p/')) {
+      setIsDark(false)
+      document.documentElement.classList.remove('dark')
+      document.documentElement.style.colorScheme = 'light'
+      setMounted(true)
+      return
+    }
+
     const cached = localStorage.getItem('app_theme')
     const darkTheme = cached === 'dark' || (!cached && window.matchMedia('(prefers-color-scheme: dark)').matches)
     if (darkTheme) {
