@@ -35,9 +35,7 @@ interface ParentDashboardProps {
 }
 
 export default function ParentDashboard({ student, reports }: ParentDashboardProps) {
-  const [expandedReportId, setExpandedReportId] = useState<string | null>(
-    reports.length > 0 ? reports[0].id : null
-  )
+  const [expandedReportId, setExpandedReportId] = useState<string | null>(null)
   const [feedbackText, setFeedbackText] = useState('')
   const [sendingFeedback, setSendingFeedback] = useState(false)
   const [feedbackStatus, setFeedbackStatus] = useState<'idle' | 'success' | 'error'>('idle')
