@@ -4,14 +4,14 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import CustomSelect from '@/components/CustomSelect'
 import { useTranslation } from '@/components/LocaleProvider'
-import { 
-  History, 
-  Search, 
-  Copy, 
-  Trash2, 
-  Edit2, 
-  Check, 
-  Loader2, 
+import {
+  History,
+  Search,
+  Copy,
+  Trash2,
+  Edit2,
+  Check,
+  Loader2,
   X,
   User,
   Calendar,
@@ -29,12 +29,12 @@ export default function HistoryPage() {
   const supabase = createClient()
   const { t, locale } = useTranslation()
   const [userId, setUserId] = useState<string | null>(null)
-  
+
   // Data States
   const [reports, setReports] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  
+
   // Filter States
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStudentId, setSelectedStudentId] = useState('all')
@@ -182,7 +182,7 @@ export default function HistoryPage() {
       if (editImage) {
         const fileExt = editImage.name.split('.').pop()
         const fileName = `${editingReport.student_id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-        
+
         const { data: uploadData, error: uploadErr } = await supabase.storage
           .from('reports')
           .upload(fileName, editImage)
@@ -370,8 +370,8 @@ export default function HistoryPage() {
             {locale === 'id' ? 'Tidak Ada Riwayat Laporan' : 'No Report History Found'}
           </p>
           <p className="text-xs text-neutral-500 mt-1">
-            {locale === 'id' 
-              ? 'Belum ada laporan yang sesuai dengan kriteria pencarian Anda.' 
+            {locale === 'id'
+              ? 'Belum ada laporan yang sesuai dengan kriteria pencarian Anda.'
               : 'No reports match your current search filters.'}
           </p>
         </div>
@@ -380,12 +380,12 @@ export default function HistoryPage() {
           {groupedList.map((group) => {
             const isExpanded = !!expandedStudents[group.studentId]
             return (
-              <div 
+              <div
                 key={group.studentId}
                 className="bg-white border border-black/10 rounded-2xl shadow-none overflow-hidden transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20"
               >
                 {/* Accordion Trigger (Student Header) */}
-                <div 
+                <div
                   onClick={() => toggleStudentExpand(group.studentId)}
                   className="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-neutral-50/50 transition-colors duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] select-none"
                 >
@@ -407,8 +407,8 @@ export default function HistoryPage() {
                       }}
                       className={`
                         px-2.5 py-1 rounded-xl border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer h-7 font-mono uppercase tracking-wider
-                        ${copiedStudentId === group.studentId 
-                          ? 'bg-black border-black text-white' 
+                        ${copiedStudentId === group.studentId
+                          ? 'bg-black border-black text-white'
                           : 'bg-white border-black/10 text-neutral-500 hover:text-black hover:bg-neutral-100'}
                       `}
                       title={locale === 'id' ? 'Salin Link Portal' : 'Copy Portal Link'}
@@ -419,10 +419,9 @@ export default function HistoryPage() {
                     <span className="inline-flex items-center px-2.5 py-0.5 bg-neutral-100 border border-black/5 text-black text-xs font-bold rounded-xl font-mono uppercase">
                       {group.reports.length} {locale === 'id' ? 'Laporan' : 'Reports'}
                     </span>
-                    <ChevronDown 
-                      className={`w-5 h-5 text-neutral-400 transition-transform duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                        isExpanded ? 'rotate-180' : ''
-                      }`}
+                    <ChevronDown
+                      className={`w-5 h-5 text-neutral-400 transition-transform duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${isExpanded ? 'rotate-180' : ''
+                        }`}
                     />
                   </div>
                 </div>
@@ -434,9 +433,9 @@ export default function HistoryPage() {
                       const isReportExpanded = !!expandedReports[report.id]
                       return (
                         <div key={report.id} className="p-4 space-y-4 bg-white first:pt-4 last:pb-4">
-                          
+
                           {/* Report row header */}
-                          <div 
+                          <div
                             onClick={() => toggleReportExpand(report.id)}
                             className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer select-none"
                           >
@@ -461,8 +460,8 @@ export default function HistoryPage() {
                                 }}
                                 className={`
                                   px-2.5 py-1 rounded-xl border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer h-7 font-mono uppercase tracking-wider
-                                  ${copiedId === report.id 
-                                    ? 'bg-white border-black text-black font-bold' 
+                                  ${copiedId === report.id
+                                    ? 'bg-white border-black text-black font-bold'
                                     : 'bg-white border-black/10 text-neutral-500 hover:text-black hover:bg-neutral-100'}
                                 `}
                               >
@@ -475,11 +474,10 @@ export default function HistoryPage() {
                                   e.stopPropagation()
                                   toggleReportExpand(report.id)
                                 }}
-                                className={`p-1.5 rounded-xl transition-colors cursor-pointer border h-7 w-7 flex items-center justify-center shadow-none ${
-                                  isReportExpanded 
-                                    ? 'bg-black text-white border-black' 
+                                className={`p-1.5 rounded-xl transition-colors cursor-pointer border h-7 w-7 flex items-center justify-center shadow-none ${isReportExpanded
+                                    ? 'bg-black text-white border-black'
                                     : 'bg-white text-neutral-500 border-black/10 hover:text-black hover:bg-neutral-100'
-                                }`}
+                                  }`}
                                 title={locale === 'id' ? 'Lihat Detail Laporan' : 'View Report Details'}
                               >
                                 <Eye className="w-3.5 h-3.5" />
@@ -507,10 +505,9 @@ export default function HistoryPage() {
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
 
-                              <ChevronDown 
-                                className={`w-4 h-4 text-neutral-400 transition-transform duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                                  isReportExpanded ? 'rotate-180' : ''
-                                }`}
+                              <ChevronDown
+                                className={`w-4 h-4 text-neutral-400 transition-transform duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${isReportExpanded ? 'rotate-180' : ''
+                                  }`}
                               />
                             </div>
                           </div>
@@ -526,7 +523,7 @@ export default function HistoryPage() {
                           {/* Expanded Details Box */}
                           {isReportExpanded && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 bg-neutral-50 border border-black/5 rounded-2xl p-4.5 mt-2 transition-all">
-                              
+
                               {/* Inputs details (1/3) */}
                               <div className="space-y-3.5 text-xs font-medium">
                                 <div>
@@ -546,16 +543,16 @@ export default function HistoryPage() {
                                     <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-2 font-mono">
                                       {locale === 'id' ? 'Foto Progres:' : 'Progress Photo:'}
                                     </span>
-                                    <a 
-                                      href={report.image_url} 
-                                      target="_blank" 
+                                    <a
+                                      href={report.image_url}
+                                      target="_blank"
                                       rel="noreferrer"
                                       className="group relative block w-full max-w-[240px] aspect-video bg-neutral-900 rounded-xl overflow-hidden border border-black/10 shadow-none"
                                     >
                                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                                      <img 
-                                        src={report.image_url} 
-                                        alt="Progress" 
+                                      <img
+                                        src={report.image_url}
+                                        alt="Progress"
                                         className="w-full h-full object-cover filter grayscale contrast-115 group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
                                       />
                                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-medium gap-1 text-[10px] uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]">
@@ -596,7 +593,7 @@ export default function HistoryPage() {
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="w-full max-w-2xl bg-white border border-black/10 rounded-2xl p-6 shadow-none relative max-h-[90vh] overflow-y-auto">
-            <button 
+            <button
               onClick={() => setShowEditModal(false)}
               className="absolute right-4 top-4 text-neutral-400 hover:text-black p-1 rounded-lg"
             >

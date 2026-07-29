@@ -1,7 +1,13 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import { createClient } from '@/utils/supabase/server'
 import ParentDashboard, { ParsedReport } from './ParentDashboard'
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+})
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -176,5 +182,9 @@ export default async function ParentPage({ params }: PageProps) {
     notFound()
   }
 
-  return <ParentDashboard student={data.student} reports={data.reports} />
+  return (
+    <div className={plusJakartaSans.variable}>
+      <ParentDashboard student={data.student} reports={data.reports} />
+    </div>
+  )
 }
