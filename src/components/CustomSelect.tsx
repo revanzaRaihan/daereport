@@ -103,7 +103,7 @@ export default function CustomSelect({
   };
 
   return (
-    <div className={`w-full ${className}`}>
+    <div className={`w-full ${className}`} data-lenis-prevent>
       <Select
         instanceId={id}
         options={options}

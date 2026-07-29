@@ -21,7 +21,8 @@ import {
   ExternalLink,
   ChevronDown,
   ArrowUpDown,
-  Eye
+  Eye,
+  Share2
 } from 'lucide-react'
 
 export default function HistoryPage() {
@@ -41,6 +42,24 @@ export default function HistoryPage() {
 
   // Copy State Tracker
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [copiedStudentId, setCopiedStudentId] = useState<string | null>(null)
+
+  const handleShareLink = (studentName: string, studentId: string) => {
+    const slug = studentName
+      .toString()
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^\w\-]+/g, '')
+      .replace(/\-\-+/g, '-')
+      .replace(/^-+/, '')
+      .replace(/-+$/, '')
+    const url = `${window.location.origin}/p/${slug}`
+    navigator.clipboard.writeText(url)
+    setCopiedStudentId(studentId)
+    setTimeout(() => setCopiedStudentId(null), 2000)
+    triggerToast('success', locale === 'id' ? 'Link portal orang tua berhasil disalin!' : 'Parent portal link copied successfully!')
+  }
 
   // Expanded States
   const [expandedStudents, setExpandedStudents] = useState<Record<string, boolean>>({})
@@ -381,6 +400,22 @@ export default function HistoryPage() {
                   </div>
 
                   <div className="flex items-center gap-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleShareLink(group.studentName, group.studentId)
+                      }}
+                      className={`
+                        px-2.5 py-1 rounded-xl border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer h-7 font-mono uppercase tracking-wider
+                        ${copiedStudentId === group.studentId 
+                          ? 'bg-black border-black text-white' 
+                          : 'bg-white border-black/10 text-neutral-500 hover:text-black hover:bg-neutral-100'}
+                      `}
+                      title={locale === 'id' ? 'Salin Link Portal' : 'Copy Portal Link'}
+                    >
+                      {copiedStudentId === group.studentId ? <Check className="w-3 h-3" /> : <Share2 className="w-3 h-3" />}
+                      <span>{copiedStudentId === group.studentId ? (locale === 'id' ? 'Disalin' : 'Copied') : (locale === 'id' ? 'Bagikan' : 'Share')}</span>
+                    </button>
                     <span className="inline-flex items-center px-2.5 py-0.5 bg-neutral-100 border border-black/5 text-black text-xs font-bold rounded-xl font-mono uppercase">
                       {group.reports.length} {locale === 'id' ? 'Laporan' : 'Reports'}
                     </span>
