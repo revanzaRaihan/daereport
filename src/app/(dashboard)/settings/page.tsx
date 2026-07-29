@@ -140,7 +140,7 @@ export default function SettingsPage() {
         { label: 'Gemini 3.5 Flash', value: 'gemini-3.5-flash' },
         { label: 'Gemini 3.5 Flash Lite', value: 'gemini-3.5-flash-lite' },
         { label: 'Gemini 3.1 Flash Lite', value: 'gemini-3.1-flash-lite' },
-        { label: 'Gemini 3 Flash', value: 'gemini-3.0-flash' },
+        { label: 'Gemini 3 Flash', value: 'gemini-3-flash' },
         { label: 'Gemini 2.5 Flash (Default)', value: 'gemini-2.5-flash' },
         { label: currentLocale === 'id' ? 'Gemini 2.5 Pro (Lebih Pintar / Lambat)' : 'Gemini 2.5 Pro (Smarter / Slower)', value: 'gemini-2.5-pro' },
         { label: 'Gemini 2.5 Flash Lite', value: 'gemini-2.5-flash-lite' },
