@@ -148,8 +148,7 @@ export default function HistoryPage() {
           .from('reports')
           .select('*')
           .eq('user_id', user.id)
-          .order('report_date', { ascending: false })
-          .order('meeting_number', { ascending: false })
+          .order('created_at', { ascending: false })
         setReports(reportsData || [])
       }
     } catch (e) {
@@ -241,7 +240,8 @@ export default function HistoryPage() {
           materi: editMateri,
           behavior: editBehavior,
           content: editContent,
-          image_url: imageUrl
+          image_url: imageUrl,
+          updated_at: new Date().toISOString()
         })
         .eq('id', editingReport.id)
 
@@ -266,7 +266,7 @@ export default function HistoryPage() {
   })
 
   const getSortTime = (r: any) => {
-    const timeStr = r.updated_at || r.created_at || r.report_date
+    const timeStr = r.updated_at || r.created_at
     return new Date(timeStr).getTime() || 0
   }
 
@@ -296,21 +296,13 @@ export default function HistoryPage() {
 
   // Sort reports within each student group and calculate modified times
   groupedList.forEach(group => {
-    group.reports.sort((a, b) => {
-      const timeA = getSortTime(a)
-      const timeB = getSortTime(b)
-      if (sortOrder === 'recent') {
-        return timeB - timeA || b.meeting_number - a.meeting_number
-      } else {
-        return timeA - timeB || a.meeting_number - b.meeting_number
-      }
-    })
+    group.reports.sort((a, b) => b.meeting_number - a.meeting_number)
 
     // Calculate the most recent modification relative time for the group
     let maxTimestamp = 0
     let latestReportDate = ''
     group.reports.forEach(r => {
-      const t = r.updated_at || r.created_at || r.report_date
+      const t = r.updated_at || r.created_at
       const time = new Date(t).getTime()
       if (time > maxTimestamp) {
         maxTimestamp = time
@@ -571,7 +563,7 @@ export default function HistoryPage() {
                                       </span>
                                       <span className="text-[10px] text-neutral-450 font-semibold font-mono flex items-center gap-1 shrink-0 bg-neutral-100/50 border border-black/5 px-2 py-0.5 rounded-lg">
                                         <Clock className="w-3 h-3 text-neutral-300" />
-                                        {getRelativeTime(report.updated_at || report.created_at || report.report_date, locale)}
+                                        {getRelativeTime(report.updated_at || report.created_at, locale)}
                                       </span>
                                       <p className="text-xs text-neutral-700 font-semibold truncate max-w-xs md:max-w-md hidden sm:block">
                                         {report.materi}
