@@ -8,9 +8,9 @@ export const translations = {
     nav_settings: "Pengaturan",
     nav_logout: "Keluar",
     nav_role: "Pengajar",
-    
+
     // Header & Actions
-    header_create_ai: "Buat Laporan AI",
+    header_create_ai: "Buat Laporan",
     btn_generate: "Generate Laporan AI",
     btn_generating: "Membuat Laporan...",
     btn_save: "Simpan ke Riwayat",
@@ -21,7 +21,7 @@ export const translations = {
     btn_delete: "Hapus",
     btn_edit: "Edit",
     btn_save_data: "Simpan Data",
-    
+
     // Main Form
     placeholder_student: "-- Pilih Murid Les --",
     placeholder_date: "Pilih Tanggal Laporan",
@@ -36,13 +36,13 @@ export const translations = {
     btn_remove_photo: "Hapus Foto",
     label_rec: "Rekomendasi Latihan Progresif (Opsional)",
     placeholder_rec: "Pilih kategori latihan progresif...",
-    
+
     // Toast Messages
     msg_fill_fields: "Harap isi semua input wajib (murid, materi, observasi).",
     msg_saved: "Laporan berhasil disimpan ke riwayat.",
     msg_failed_save: "Gagal menyimpan laporan.",
     msg_generating: "Menghasilkan draf laporan AI...",
-    
+
     // Students Page
     students_title: "Manajemen Murid",
     students_subtitle: "Daftar Murid & Jadwal Les",
@@ -51,18 +51,18 @@ export const translations = {
     btn_add_student: "Tambah Murid",
     btn_add_schedule: "Jadwal Baru",
     placeholder_search_student: "Cari nama atau pelajaran...",
-    
+
     label_student_name: "Nama Murid",
     label_student_subject: "Mata Pelajaran / Kelas",
     label_student_first_meet: "Mulai Pertemuan Pertama",
     label_student_meet_count: "Jumlah Meeting",
-    
+
     label_sched_day: "Hari Belajar",
     label_sched_start: "Jam Mulai",
     label_sched_end: "Jam Selesai",
     label_sched_label: "Label / Lokasi (Opsional)",
     label_sched_students: "Pilih Murid Les untuk Jadwal Ini",
-    
+
     // Dataset Page
     dataset_title: "Dataset Gaya Bahasa",
     dataset_subtitle: "Kustomisasi Penulisan AI",
@@ -77,7 +77,7 @@ export const translations = {
     label_rec_body: "Contoh Teks Rekomendasi Game",
     btn_save_style: "Simpan Contoh Gaya",
     btn_save_rec: "Simpan Rekomendasi",
-    
+
     // History Page
     history_title: "Riwayat Laporan",
     history_subtitle: "Arsip Laporan Progres Murid",
@@ -85,7 +85,7 @@ export const translations = {
     btn_edit_report: "Edit Laporan",
     btn_delete_report: "Hapus Laporan",
     modal_edit_report: "Edit Riwayat Laporan",
-    
+
     // Settings Page
     settings_title: "Pengaturan Sistem",
     settings_subtitle: "Konfigurasi",
@@ -107,9 +107,9 @@ export const translations = {
     nav_settings: "Settings",
     nav_logout: "Log Out",
     nav_role: "Instructor",
-    
+
     // Header & Actions
-    header_create_ai: "Create AI Report",
+    header_create_ai: "Create Report",
     btn_generate: "Generate AI Report",
     btn_generating: "Generating Report...",
     btn_save: "Save to History",
@@ -120,7 +120,7 @@ export const translations = {
     btn_delete: "Delete",
     btn_edit: "Edit",
     btn_save_data: "Save Data",
-    
+
     // Main Form
     placeholder_student: "-- Select Student --",
     placeholder_date: "Select Report Date",
@@ -135,13 +135,13 @@ export const translations = {
     btn_remove_photo: "Remove Photo",
     label_rec: "Progressive Practice Recommendation (Optional)",
     placeholder_rec: "Select progressive category...",
-    
+
     // Toast Messages
     msg_fill_fields: "Please fill all required inputs (student, material, observations).",
     msg_saved: "Report successfully saved to history.",
     msg_failed_save: "Failed to save report.",
     msg_generating: "Generating AI report draft...",
-    
+
     // Students Page
     students_title: "Student Management",
     students_subtitle: "Student List & Lesson Schedules",
@@ -150,18 +150,18 @@ export const translations = {
     btn_add_student: "Add Student",
     btn_add_schedule: "New Schedule",
     placeholder_search_student: "Search name or subject...",
-    
+
     label_student_name: "Student Name",
     label_student_subject: "Subject / Grade",
     label_student_first_meet: "Start of First Meeting",
     label_student_meet_count: "Meeting Count",
-    
+
     label_sched_day: "Lesson Day",
     label_sched_start: "Start Time",
     label_sched_end: "End Time",
     label_sched_label: "Label / Location (Optional)",
     label_sched_students: "Select Students for This Schedule",
-    
+
     // Dataset Page
     dataset_title: "Writing Style Dataset",
     dataset_subtitle: "Customize AI Writing Style",
@@ -176,7 +176,7 @@ export const translations = {
     label_rec_body: "Example Game Recommendation Text",
     btn_save_style: "Save Style Example",
     btn_save_rec: "Save Recommendation",
-    
+
     // History Page
     history_title: "Report History",
     history_subtitle: "Student Progress Report Archive",
@@ -184,7 +184,7 @@ export const translations = {
     btn_edit_report: "Edit Report",
     btn_delete_report: "Delete Report",
     modal_edit_report: "Edit Report History",
-    
+
     // Settings Page
     settings_title: "System Settings",
     settings_subtitle: "Configuration",

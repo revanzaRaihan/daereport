@@ -20,7 +20,8 @@ import {
   AlertCircle,
   ChevronRight,
   Sun,
-  Moon
+  Moon,
+  PenTool
 } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
 
@@ -113,7 +114,7 @@ export default function DashboardLayout({
   }
 
   const navItems = [
-    { name: t('nav_create_report'), href: '/', icon: Logo },
+    { name: t('nav_create_report'), href: '/', icon: PenTool },
     { name: t('nav_students'), href: '/students', icon: Users },
     { name: t('nav_dataset'), href: '/dataset', icon: BookOpen },
     { name: t('nav_history'), href: '/history', icon: History },

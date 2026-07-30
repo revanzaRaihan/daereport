@@ -7,10 +7,10 @@ import { createClient } from '@/utils/supabase/client'
 import { syncPendingReports } from '@/lib/schedule/syncPendingReports'
 import CustomSelect from '@/components/CustomSelect'
 import CustomDatePicker from '@/components/CustomDatePicker'
-import Logo from '@/components/Logo'
 import { useTranslation } from '@/components/LocaleProvider'
 import { 
   Sparkles, 
+  PenTool,
   Send, 
   Save, 
   Calendar, 
@@ -353,10 +353,9 @@ export default function LaporanBuilderPage() {
   return (
     <div className="space-y-6">
       
-      {/* 1. PRIMARY CONTENT HEADER (Height: 64px, flex items-center justify-between) */}
       <div className="h-16 flex items-center justify-between border-b border-black/10 pb-4">
         <div className="flex items-center gap-3">
-          <Logo className="w-6 h-6 text-black" />
+          <PenTool className="w-6 h-6 text-primary" />
           <h2 className="text-xl font-bold text-black tracking-tighter uppercase font-editorial-headline">{t('header_create_ai')}</h2>
         </div>
 
