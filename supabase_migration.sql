@@ -170,4 +170,38 @@ DROP POLICY IF EXISTS "Allow anonymous read on reports" ON public.reports;
 CREATE POLICY "Allow anonymous read on reports" ON public.reports FOR SELECT TO anon, authenticated USING (true);
 
 
+-- =====================================================================
+-- LANGKAH E: SETUP RLS POLICIES UNTUK SCHEDULE_STUDENT
+-- =====================================================================
 
+-- Aktifkan RLS pada schedule_student jika belum aktif
+ALTER TABLE public.schedule_student ENABLE ROW LEVEL SECURITY;
+
+-- Drop Policy lama jika ada
+DROP POLICY IF EXISTS "Users can perform all actions on their own schedule_student relations" ON public.schedule_student;
+
+-- Buat Policy Baru: ijinkan user melakukan operasi jika murid atau jadwal berelasi milik user tersebut
+CREATE POLICY "Users can perform all actions on their own schedule_student relations" 
+    ON public.schedule_student FOR ALL TO authenticated 
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.students 
+            WHERE students.id = schedule_student.student_id 
+            AND students.user_id = auth.uid()
+        ) OR EXISTS (
+            SELECT 1 FROM public.schedules 
+            WHERE schedules.id = schedule_student.schedule_id 
+            AND schedules.user_id = auth.uid()
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.students 
+            WHERE students.id = schedule_student.student_id 
+            AND students.user_id = auth.uid()
+        ) OR EXISTS (
+            SELECT 1 FROM public.schedules 
+            WHERE schedules.id = schedule_student.schedule_id 
+            AND schedules.user_id = auth.uid()
+        )
+    );

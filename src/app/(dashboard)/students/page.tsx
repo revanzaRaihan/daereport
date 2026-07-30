@@ -74,6 +74,7 @@ export default function StudentsAndSchedulesPage() {
   const [schedEnd, setSchedEnd] = useState('')
   const [schedLabel, setSchedLabel] = useState('')
   const [schedStudentIds, setSchedStudentIds] = useState<string[]>([])
+  const [schedStudentSearchQuery, setSchedStudentSearchQuery] = useState('')
 
   // Fetch all data
   const fetchData = async () => {
@@ -211,6 +212,7 @@ export default function StudentsAndSchedulesPage() {
   // --- SCHEDULE ACTIONS ---
   const handleOpenScheduleModal = (sched: any | null = null) => {
     setEditingSchedule(sched)
+    setSchedStudentSearchQuery('')
     if (sched) {
       setSchedDay(sched.day_of_week)
       setSchedStart(sched.start_time.substring(0, 5))
@@ -278,9 +280,18 @@ export default function StudentsAndSchedulesPage() {
         await supabase.from('schedule_student').delete().eq('schedule_id', scheduleId)
       } else {
         // Create Schedule Table
+        const newScheduleId = typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID
+          ? window.crypto.randomUUID()
+          : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+              const r = Math.random() * 16 | 0
+              const v = c === 'x' ? r : (r & 0x3 | 0x8)
+              return v.toString(16)
+            })
+
         const { data, error } = await supabase
           .from('schedules')
           .insert({
+            id: newScheduleId,
             day_of_week: schedDay,
             start_time: schedStart,
             end_time: schedEnd,
@@ -745,21 +756,44 @@ export default function StudentsAndSchedulesPage() {
                 <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
                   {t('label_sched_students')}
                 </label>
+                <div className="relative mb-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                  <input
+                    type="text"
+                    placeholder={locale === 'id' ? 'Cari nama murid...' : 'Search student...'}
+                    value={schedStudentSearchQuery}
+                    onChange={(e) => setSchedStudentSearchQuery(e.target.value)}
+                    className="form-input-premium pl-9 py-1.5 text-xs shadow-none"
+                  />
+                </div>
                 <div className="border border-black/10 rounded-xl p-3 max-h-40 overflow-y-auto space-y-2 bg-neutral-50/50">
-                  {students.map(s => {
-                    const isChecked = schedStudentIds.includes(s.id)
-                    return (
-                      <label key={s.id} className="flex items-center gap-2 text-xs font-semibold text-black cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => toggleStudentSelection(s.id)}
-                          className="rounded text-black focus:ring-black h-4 w-4 border-black/15 accent-black"
-                        />
-                        <span>{s.name} ({s.subject})</span>
-                      </label>
+                  {(() => {
+                    const filtered = students.filter(s =>
+                      s.name.toLowerCase().includes(schedStudentSearchQuery.toLowerCase()) ||
+                      s.subject.toLowerCase().includes(schedStudentSearchQuery.toLowerCase())
                     )
-                  })}
+                    if (filtered.length === 0) {
+                      return (
+                        <p className="text-xs text-neutral-400 italic py-1 text-center">
+                          {locale === 'id' ? 'Tidak ada murid yang cocok' : 'No matching students'}
+                        </p>
+                      )
+                    }
+                    return filtered.map(s => {
+                      const isChecked = schedStudentIds.includes(s.id)
+                      return (
+                        <label key={s.id} className="flex items-center gap-2 text-xs font-semibold text-black cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleStudentSelection(s.id)}
+                            className="rounded text-black focus:ring-black h-4 w-4 border-black/15 accent-black"
+                          />
+                          <span>{s.name} ({s.subject})</span>
+                        </label>
+                      )
+                    })
+                  })()}
                 </div>
               </div>
 
