@@ -178,12 +178,23 @@ export default function HistoryPage() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const handleDeleteReport = async (id: string) => {
+  const handleDeleteReport = async (id: string, studentId: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus laporan ini dari riwayat?')) return
 
     try {
       const { error } = await supabase.from('reports').delete().eq('id', id)
       if (error) throw error
+
+      // Recalculate meeting_count for the student
+      const { count: reportsCount } = await supabase
+        .from('reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', studentId)
+
+      await supabase.from('students')
+        .update({ meeting_count: reportsCount || 0 })
+        .eq('id', studentId)
+
       triggerToast('success', 'Laporan berhasil dihapus.')
       fetchData()
     } catch (err: any) {
@@ -266,7 +277,7 @@ export default function HistoryPage() {
   })
 
   const getSortTime = (r: any) => {
-    const timeStr = r.updated_at || r.created_at
+    const timeStr = r.updated_at || r.created_at || r.report_date
     return new Date(timeStr).getTime() || 0
   }
 
@@ -302,7 +313,7 @@ export default function HistoryPage() {
     let maxTimestamp = 0
     let latestReportDate = ''
     group.reports.forEach(r => {
-      const t = r.updated_at || r.created_at
+      const t = r.updated_at || r.created_at || r.report_date
       const time = new Date(t).getTime()
       if (time > maxTimestamp) {
         maxTimestamp = time
@@ -563,7 +574,7 @@ export default function HistoryPage() {
                                       </span>
                                       <span className="text-[10px] text-neutral-450 font-semibold font-mono flex items-center gap-1 shrink-0 bg-neutral-100/50 border border-black/5 px-2 py-0.5 rounded-lg">
                                         <Clock className="w-3 h-3 text-neutral-300" />
-                                        {getRelativeTime(report.updated_at || report.created_at, locale)}
+                                        {getRelativeTime(report.updated_at || report.created_at || report.report_date, locale)}
                                       </span>
                                       <p className="text-xs text-neutral-700 font-semibold truncate max-w-xs md:max-w-md hidden sm:block">
                                         {report.materi}
@@ -619,7 +630,7 @@ export default function HistoryPage() {
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation()
-                                          handleDeleteReport(report.id)
+                                          handleDeleteReport(report.id, report.student_id)
                                         }}
                                         className="text-neutral-500 hover:text-black p-1.5 hover:bg-neutral-100 rounded-xl transition-colors cursor-pointer border border-black/10 bg-white h-7 w-7 flex items-center justify-center shadow-none font-bold"
                                         title={t('btn_delete')}

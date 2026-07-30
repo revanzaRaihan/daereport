@@ -9,7 +9,8 @@ import {
   GraduationCap,
   ArrowRight,
   Copy,
-  Check
+  Check,
+  Clock
 } from 'lucide-react'
 
 export interface ParsedReport {
@@ -128,7 +129,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
 
           <div className="flex justify-center">
             <span className="inline-flex items-center px-4 py-1.5 bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs font-bold rounded-2xl uppercase tracking-wider">
-              {student.meeting_count || 0} Pertemuan Selesai
+              {reports.length} Pertemuan Selesai
             </span>
           </div>
         </div>
@@ -137,7 +138,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
         {latestReport ? (
           <div className="space-y-4">
             <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#10AF13] animate-ping" />
+              <Clock className="w-4 h-4 text-[#10AF13]" />
               Laporan Terbaru
             </h2>
 

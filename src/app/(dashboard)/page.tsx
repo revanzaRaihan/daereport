@@ -280,7 +280,9 @@ export default function LaporanBuilderPage() {
         behavior,
         content: generatedText,
         image_url: imageUrl,
-        user_id: currentUserId
+        user_id: currentUserId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
 
       if (insertErr) {
@@ -291,9 +293,13 @@ export default function LaporanBuilderPage() {
         await supabase.from('pending_reports').delete().eq('id', selectedPendingId)
       }
 
-      const currentCount = student.meeting_count || 0
+      const { count: reportsCount } = await supabase
+        .from('reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', selectedStudentId)
+
       await supabase.from('students')
-        .update({ meeting_count: currentCount + 1 })
+        .update({ meeting_count: reportsCount || 0 })
         .eq('id', selectedStudentId)
 
       setStatusMsg({ type: 'success', text: 'Laporan berhasil disimpan ke riwayat.' })

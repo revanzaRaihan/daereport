@@ -46,7 +46,21 @@ export default async function Image({ params }: { params: { slug: string } }) {
         if (student) {
           studentName = student.name
           subject = student.subject
-          totalMeetings = student.meeting_count || 0
+          
+          // Fetch actual count of reports for this student
+          const countRes = await fetch(`${supabaseUrl}/rest/v1/reports?student_id=eq.${student.id}&select=id`, {
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+            },
+            next: { revalidate: 60 }
+          })
+          if (countRes.ok) {
+            const reportsData = await countRes.json()
+            totalMeetings = reportsData.length
+          } else {
+            totalMeetings = student.meeting_count || 0
+          }
         }
       }
     }
