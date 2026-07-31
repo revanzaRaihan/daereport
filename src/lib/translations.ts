@@ -97,6 +97,10 @@ export const translations = {
     label_locale: "Bahasa Default Dashboard",
     msg_settings_saved: "Pengaturan AI dan sistem berhasil disimpan.",
     msg_settings_failed: "Gagal menyimpan pengaturan.",
+    btn_share_portals: "Bagikan Portal",
+    modal_share_title: "Bagikan Portal Orang Tua",
+    modal_share_desc: "Teks di bawah ini mencakup seluruh portal orang tua murid yang memiliki jadwal belajar. Anda dapat mengedit teks ini sebelum menyalin atau membagikannya ke WhatsApp.",
+    btn_share_wa: "Bagikan ke WhatsApp",
   },
   en: {
     // Navigation
@@ -196,5 +200,9 @@ export const translations = {
     label_locale: "Default Dashboard Language",
     msg_settings_saved: "AI and system settings successfully saved.",
     msg_settings_failed: "Failed to save settings.",
+    btn_share_portals: "Share Portals",
+    modal_share_title: "Share Parent Portals",
+    modal_share_desc: "The text below includes all parent portals of students who have a lesson schedule. You can edit this text before copying or sharing it to WhatsApp.",
+    btn_share_wa: "Share to WhatsApp",
   }
 }
