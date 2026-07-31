@@ -18,7 +18,9 @@ import {
   Loader2,
   X,
   Search,
-  BookOpen
+  BookOpen,
+  Share2,
+  Copy
 } from 'lucide-react'
 
 const DAYS_MAP: Record<number, string> = {
@@ -39,6 +41,18 @@ const DAYS_MAP_EN: Record<number, string> = {
   5: 'Friday',
   6: 'Saturday',
   7: 'Sunday'
+}
+
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')           // Replace spaces with -
+    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+    .replace(/^-+/, '')             // Trim - from start of text
+    .replace(/-+$/, '')             // Trim - from end of text
 }
 
 export default function StudentsAndSchedulesPage() {
@@ -75,6 +89,11 @@ export default function StudentsAndSchedulesPage() {
   const [schedLabel, setSchedLabel] = useState('')
   const [schedStudentIds, setSchedStudentIds] = useState<string[]>([])
   const [schedStudentSearchQuery, setSchedStudentSearchQuery] = useState('')
+
+  // Share Modal States
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareText, setShareText] = useState('')
+  const [shareCopied, setShareCopied] = useState(false)
 
   // Fetch all data
   const fetchData = async () => {
@@ -351,6 +370,48 @@ export default function StudentsAndSchedulesPage() {
     }
   }
 
+  const handleOpenShareModal = () => {
+    let targetStudents = []
+
+    if (activeTab === 'schedules') {
+      const assignedStudentIds = Array.from(
+        new Set(
+          schedules.flatMap(sched => (sched.schedule_student || []).map((rel: any) => rel.student_id))
+        )
+      )
+      targetStudents = students.filter(s => assignedStudentIds.includes(s.id))
+    } else {
+      targetStudents = [...students]
+    }
+
+    targetStudents.sort((a, b) => a.name.localeCompare(b.name))
+
+    if (targetStudents.length === 0) {
+      setShareText(locale === 'id' ? 'Belum ada data murid.' : 'No student data yet.')
+    } else {
+      const hostUrl = typeof window !== 'undefined' ? window.location.origin : ''
+      const shareLines = targetStudents.map((s, idx) => {
+        const slug = slugify(s.name)
+        return `${idx + 1}. ${s.name} : ${hostUrl}/p/${slug}.`
+      })
+      const text = `PORTAL ORTU\n${shareLines.join('\n')}`
+      setShareText(text)
+    }
+    
+    setShareCopied(false)
+    setShowShareModal(true)
+  }
+
+  const handleCopyShareText = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText)
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy text', err)
+    }
+  }
+
   // Filters
   const filteredStudents = students.filter(s => 
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -391,6 +452,14 @@ export default function StudentsAndSchedulesPage() {
               {t('tab_schedules')}
             </button>
           </div>
+
+          <button
+            onClick={handleOpenShareModal}
+            className="bg-white border border-black/10 hover:bg-neutral-100 text-black text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-none cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          >
+            <Share2 className="w-4 h-4 text-neutral-500" />
+            <span>{t('btn_share_portals')}</span>
+          </button>
 
           <button
             onClick={() => activeTab === 'students' ? handleOpenStudentModal() : handleOpenScheduleModal()}
@@ -815,6 +884,76 @@ export default function StudentsAndSchedulesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* SHARE PORTAL MODAL */}
+      {showShareModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+          <div className="w-full max-w-lg bg-white border border-black/10 rounded-2xl p-6 shadow-none relative animate-scale-up">
+            <button 
+              onClick={() => setShowShareModal(false)}
+              className="absolute right-4 top-4 text-neutral-400 hover:text-black p-1 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-base font-bold text-black mb-2 uppercase tracking-wider font-mono">
+              {t('modal_share_title')}
+            </h3>
+            
+            <p className="text-xs text-neutral-500 mb-4">
+              {t('modal_share_desc')}
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <textarea
+                  rows={10}
+                  value={shareText}
+                  onChange={(e) => setShareText(e.target.value)}
+                  className="w-full bg-neutral-50 border border-black/10 rounded-xl p-4 text-xs text-black font-mono leading-relaxed focus:outline-none focus:border-black focus:shadow-[0_0_0_1px_#000000] resize-y"
+                />
+              </div>
+
+              <div className="pt-4 flex flex-col sm:flex-row justify-end gap-3 border-t border-black/10">
+                <button
+                  type="button"
+                  onClick={() => setShowShareModal(false)}
+                  className="bg-white border border-black/10 hover:bg-neutral-100 text-black font-semibold px-4 py-2.5 rounded-xl cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono order-3 sm:order-1"
+                >
+                  {t('btn_cancel')}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={handleCopyShareText}
+                  className="bg-white border border-black hover:bg-neutral-50 text-black font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow-none cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono order-2"
+                >
+                  {shareCopied ? (
+                    <>
+                      <Check className="w-4 h-4 text-black animate-pulse" />
+                      <span>{t('btn_copied')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 text-black" />
+                      <span>{locale === 'id' ? 'Salin Teks' : 'Copy Text'}</span>
+                    </>
+                  )}
+                </button>
+
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-black hover:bg-neutral-800 text-white font-bold px-5 py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow-none cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono order-1 sm:order-3 text-center"
+                >
+                  <span>{t('btn_share_wa')}</span>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       )}
