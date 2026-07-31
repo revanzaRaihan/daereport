@@ -4,6 +4,7 @@ import "./globals.css";
 import LocaleProvider from "@/components/LocaleProvider";
 import ThemeProvider from "@/components/ThemeProvider";
 import LenisProvider from "@/components/LenisProvider";
+import ConfirmProvider from "@/components/ConfirmProvider";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -33,9 +34,11 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-white text-black font-sans select-none overflow-x-hidden">
         <LocaleProvider>
           <ThemeProvider>
-            <LenisProvider>
-              {children}
-            </LenisProvider>
+            <ConfirmProvider>
+              <LenisProvider>
+                {children}
+              </LenisProvider>
+            </ConfirmProvider>
           </ThemeProvider>
         </LocaleProvider>
       </body>

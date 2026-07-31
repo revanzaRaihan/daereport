@@ -146,7 +146,8 @@ async function getStudentAndReports(slug: string) {
       id: student.id,
       name: student.name,
       subject: student.subject,
-      meeting_count: student.meeting_count
+      meeting_count: student.meeting_count,
+      user_id: student.user_id
     },
     reports: parsedReports
   }

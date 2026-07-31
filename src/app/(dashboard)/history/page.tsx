@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import CustomSelect from '@/components/CustomSelect'
 import { useTranslation } from '@/components/LocaleProvider'
+import { useConfirm } from '@/components/ConfirmProvider'
 import {
   History,
   Search,
@@ -62,6 +63,7 @@ function getRelativeTime(dateString: string, locale: 'id' | 'en'): string {
 export default function HistoryPage() {
   const supabase = createClient()
   const { t, locale } = useTranslation()
+  const { confirm } = useConfirm()
   const [userId, setUserId] = useState<string | null>(null)
 
   // Data States
@@ -178,28 +180,29 @@ export default function HistoryPage() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const handleDeleteReport = async (id: string, studentId: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus laporan ini dari riwayat?')) return
+  const handleDeleteReport = (id: string, studentId: string) => {
+    confirm({
+      message: locale === 'id' 
+        ? 'Apakah Anda yakin ingin menghapus laporan ini dari riwayat?' 
+        : 'Are you sure you want to delete this report from history?',
+      onConfirm: async () => {
+        const { error } = await supabase.from('reports').delete().eq('id', id)
+        if (error) throw error
 
-    try {
-      const { error } = await supabase.from('reports').delete().eq('id', id)
-      if (error) throw error
+        // Recalculate meeting_count for the student
+        const { count: reportsCount } = await supabase
+          .from('reports')
+          .select('*', { count: 'exact', head: true })
+          .eq('student_id', studentId)
 
-      // Recalculate meeting_count for the student
-      const { count: reportsCount } = await supabase
-        .from('reports')
-        .select('*', { count: 'exact', head: true })
-        .eq('student_id', studentId)
+        await supabase.from('students')
+          .update({ meeting_count: reportsCount || 0 })
+          .eq('id', studentId)
 
-      await supabase.from('students')
-        .update({ meeting_count: reportsCount || 0 })
-        .eq('id', studentId)
-
-      triggerToast('success', 'Laporan berhasil dihapus.')
-      fetchData()
-    } catch (err: any) {
-      triggerToast('error', err.message || 'Gagal menghapus laporan.')
-    }
+        triggerToast('success', 'Laporan berhasil dihapus.')
+        fetchData()
+      }
+    })
   }
 
   const handleOpenEditModal = (report: any) => {

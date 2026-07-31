@@ -21,7 +21,8 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  PenTool
+  PenTool,
+  Inbox
 } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
 
@@ -49,6 +50,7 @@ export default function DashboardLayout({
   const [totalStudents, setTotalStudents] = useState(0)
   const [totalReports, setTotalReports] = useState(0)
   const [studentProgressList, setStudentProgressList] = useState<any[]>([])
+  const [totalFeedbacks, setTotalFeedbacks] = useState(0)
 
   const fetchKpis = async (userId: string) => {
     try {
@@ -65,6 +67,14 @@ export default function DashboardLayout({
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
       setTotalReports(reportCount || 0)
+
+      // 3. Total Feedbacks
+      const { count: feedbackCount } = await supabase
+        .from('feedbacks')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('is_read', false)
+      setTotalFeedbacks(feedbackCount || 0)
 
 
       // 4. Student Progress List (top 4 students by meeting count)
@@ -118,6 +128,7 @@ export default function DashboardLayout({
     { name: t('nav_students'), href: '/students', icon: Users },
     { name: t('nav_dataset'), href: '/dataset', icon: BookOpen },
     { name: t('nav_history'), href: '/history', icon: History },
+    { name: t('nav_inbox'), href: '/inbox', icon: Inbox },
     { name: t('nav_settings'), href: '/settings', icon: Settings },
   ]
 
@@ -182,7 +193,19 @@ export default function DashboardLayout({
                          : 'text-text-secondary hover:text-text-primary hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent'}
                     `}
                   >
-                    <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-background' : 'text-text-secondary group-hover:text-text-primary'}`} />
+                    <div className="relative flex items-center justify-center shrink-0">
+                      <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-background' : 'text-text-secondary group-hover:text-text-primary'}`} />
+                      {item.href === '/inbox' && totalFeedbacks > 0 && (
+                        <span className={`
+                          absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full text-[8px] font-black font-mono leading-none border
+                          ${isActive 
+                            ? 'bg-background text-primary border-primary' 
+                            : 'bg-red-500 text-white border-card'}
+                        `}>
+                          {totalFeedbacks}
+                        </span>
+                      )}
+                    </div>
                     <span>{item.name}</span>
                   </Link>
                 )

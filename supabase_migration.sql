@@ -205,3 +205,49 @@ CREATE POLICY "Users can perform all actions on their own schedule_student relat
             AND schedules.user_id = auth.uid()
         )
     );
+
+-- =====================================================================
+-- LANGKAH F: SETUP TABEL FEEDBACKS & POLICIES
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS public.feedbacks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+    student_name VARCHAR(255) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    feedback TEXT NOT NULL,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Aktifkan RLS pada feedbacks
+ALTER TABLE public.feedbacks ENABLE ROW LEVEL SECURITY;
+
+-- Drop Policy lama jika ada
+DROP POLICY IF EXISTS "Allow anonymous insert on feedbacks" ON public.feedbacks;
+DROP POLICY IF EXISTS "Users can view their own feedbacks" ON public.feedbacks;
+DROP POLICY IF EXISTS "Users can update their own feedbacks" ON public.feedbacks;
+DROP POLICY IF EXISTS "Users can delete their own feedbacks" ON public.feedbacks;
+
+-- Buat Policy Baru:
+-- 1. Ijinkan siapa saja (anon & authenticated) memasukkan feedback baru
+CREATE POLICY "Allow anonymous insert on feedbacks" 
+    ON public.feedbacks FOR INSERT TO anon, authenticated
+    WITH CHECK (true);
+
+-- 2. Hanya ijinkan user yang login untuk melihat feedback mereka sendiri
+CREATE POLICY "Users can view their own feedbacks" 
+    ON public.feedbacks FOR SELECT TO authenticated
+    USING (auth.uid() = user_id);
+
+-- 3. Hanya ijinkan user yang login untuk memperbarui status feedback mereka sendiri
+CREATE POLICY "Users can update their own feedbacks" 
+    ON public.feedbacks FOR UPDATE TO authenticated
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+-- 4. Hanya ijinkan user yang login untuk menghapus feedback mereka sendiri
+CREATE POLICY "Users can delete their own feedbacks" 
+    ON public.feedbacks FOR DELETE TO authenticated
+    USING (auth.uid() = user_id);

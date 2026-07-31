@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import CustomSelect from '@/components/CustomSelect'
 import { useTranslation } from '@/components/LocaleProvider'
+import { useConfirm } from '@/components/ConfirmProvider'
 import { 
   BookOpen, 
   Plus, 
@@ -33,6 +34,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default function DatasetPage() {
   const supabase = createClient()
   const { t, locale } = useTranslation()
+  const { confirm } = useConfirm()
   const [userId, setUserId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'styles' | 'recommendations'>('styles')
 
@@ -146,17 +148,16 @@ export default function DatasetPage() {
     }
   }
 
-  // Delete Style Example
-  const handleDeleteStyle = async (id: string) => {
-    if (!confirm('Hapus contoh gaya penulisan ini?')) return
-    try {
-      const { error } = await supabase.from('dataset_entries').delete().eq('id', id)
-      if (error) throw error
-      triggerToast('success', 'Contoh gaya berhasil dihapus.')
-      fetchData()
-    } catch (err: any) {
-      triggerToast('error', err.message || 'Gagal menghapus contoh.')
-    }
+  const handleDeleteStyle = (id: string) => {
+    confirm({
+      message: locale === 'id' ? 'Hapus contoh gaya penulisan ini?' : 'Delete this writing style example?',
+      onConfirm: async () => {
+        const { error } = await supabase.from('dataset_entries').delete().eq('id', id)
+        if (error) throw error
+        triggerToast('success', 'Contoh gaya berhasil dihapus.')
+        fetchData()
+      }
+    })
   }
 
   // Submit Recommendation
@@ -200,17 +201,16 @@ export default function DatasetPage() {
     }
   }
 
-  // Delete Recommendation
-  const handleDeleteRec = async (id: string) => {
-    if (!confirm('Hapus rekomendasi latihan ini?')) return
-    try {
-      const { error } = await supabase.from('recommendation_datasets').delete().eq('id', id)
-      if (error) throw error
-      triggerToast('success', 'Rekomendasi berhasil dihapus.')
-      fetchData()
-    } catch (err: any) {
-      triggerToast('error', err.message || 'Gagal menghapus rekomendasi.')
-    }
+  const handleDeleteRec = (id: string) => {
+    confirm({
+      message: locale === 'id' ? 'Hapus rekomendasi latihan ini?' : 'Delete this exercise recommendation?',
+      onConfirm: async () => {
+        const { error } = await supabase.from('recommendation_datasets').delete().eq('id', id)
+        if (error) throw error
+        triggerToast('success', 'Rekomendasi berhasil dihapus.')
+        fetchData()
+      }
+    })
   }
 
   // Filter lists

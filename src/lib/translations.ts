@@ -21,6 +21,7 @@ export const translations = {
     btn_delete: "Hapus",
     btn_edit: "Edit",
     btn_save_data: "Simpan Data",
+    confirm_title: "Konfirmasi",
 
     // Main Form
     placeholder_student: "-- Pilih Murid Les --",
@@ -101,6 +102,17 @@ export const translations = {
     modal_share_title: "Bagikan Portal Orang Tua",
     modal_share_desc: "Teks di bawah ini mencakup seluruh portal orang tua murid yang memiliki jadwal belajar. Anda dapat mengedit teks ini sebelum menyalin atau membagikannya ke WhatsApp.",
     btn_share_wa: "Bagikan ke WhatsApp",
+    nav_inbox: "Kotak Masuk",
+    inbox_title: "Masukan Orang Tua",
+    inbox_subtitle: "Daftar masukan dan saran dari orang tua murid",
+    inbox_empty_title: "Kotak Masuk Kosong",
+    inbox_empty_desc: "Belum ada masukan dari orang tua murid saat ini.",
+    inbox_col_student: "Murid",
+    inbox_col_subject: "Mata Pelajaran",
+    inbox_col_feedback: "Pesan Masukan",
+    inbox_col_date: "Tanggal Diterima",
+    inbox_col_actions: "Aksi",
+    msg_feedback_deleted: "Masukan berhasil dihapus.",
   },
   en: {
     // Navigation
@@ -124,6 +136,7 @@ export const translations = {
     btn_delete: "Delete",
     btn_edit: "Edit",
     btn_save_data: "Save Data",
+    confirm_title: "Confirmation",
 
     // Main Form
     placeholder_student: "-- Select Student --",
@@ -204,5 +217,16 @@ export const translations = {
     modal_share_title: "Share Parent Portals",
     modal_share_desc: "The text below includes all parent portals of students who have a lesson schedule. You can edit this text before copying or sharing it to WhatsApp.",
     btn_share_wa: "Share to WhatsApp",
+    nav_inbox: "Inbox",
+    inbox_title: "Parent Feedback",
+    inbox_subtitle: "List of feedback and suggestions from student parents",
+    inbox_empty_title: "Inbox is Empty",
+    inbox_empty_desc: "There is no parent feedback received yet.",
+    inbox_col_student: "Student",
+    inbox_col_subject: "Subject",
+    inbox_col_feedback: "Feedback Message",
+    inbox_col_date: "Received Date",
+    inbox_col_actions: "Actions",
+    msg_feedback_deleted: "Feedback successfully deleted.",
   }
 }

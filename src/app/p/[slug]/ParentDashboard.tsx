@@ -12,6 +12,7 @@ import {
   Check,
   Clock
 } from 'lucide-react'
+import { createClient } from '@/utils/supabase/client'
 
 export interface ParsedReport {
   id: string
@@ -33,6 +34,7 @@ interface ParentDashboardProps {
     name: string
     subject: string
     meeting_count: number | null
+    user_id: string
   }
   reports: ParsedReport[]
 }
@@ -63,7 +65,21 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
     setFeedbackStatus('idle')
 
     try {
-      const response = await fetch('https://formsubmit.co/ajax/revanzaraihanrizqullah@gmail.com', {
+      const supabase = createClient()
+      const { error: supabaseError } = await supabase
+        .from('feedbacks')
+        .insert({
+          student_id: student.id,
+          student_name: student.name,
+          subject: student.subject,
+          feedback: feedbackText,
+          user_id: student.user_id
+        })
+
+      if (supabaseError) throw supabaseError
+
+      // Call Formsubmit email as backup
+      await fetch('https://formsubmit.co/ajax/revanzaraihanrizqullah@gmail.com', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,12 +93,8 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
         })
       })
 
-      if (response.ok) {
-        setFeedbackStatus('success')
-        setFeedbackText('')
-      } else {
-        setFeedbackStatus('error')
-      }
+      setFeedbackStatus('success')
+      setFeedbackText('')
     } catch (err) {
       console.error('Failed to submit feedback:', err)
       setFeedbackStatus('error')

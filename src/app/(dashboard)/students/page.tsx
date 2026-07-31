@@ -6,6 +6,7 @@ import { syncPendingReports } from '@/lib/schedule/syncPendingReports'
 import CustomSelect from '@/components/CustomSelect'
 import CustomDatePicker from '@/components/CustomDatePicker'
 import { useTranslation } from '@/components/LocaleProvider'
+import { useConfirm } from '@/components/ConfirmProvider'
 import { 
   Users, 
   Calendar, 
@@ -58,6 +59,7 @@ function slugify(text: string): string {
 export default function StudentsAndSchedulesPage() {
   const supabase = createClient()
   const { t, locale } = useTranslation()
+  const { confirm } = useConfirm()
   const [userId, setUserId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'students' | 'schedules'>('students')
 
@@ -215,17 +217,18 @@ export default function StudentsAndSchedulesPage() {
     }
   }
 
-  const handleDeleteStudent = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus murid ini? Riwayat laporan juga akan terpengaruh.')) return
-
-    try {
-      const { error } = await supabase.from('students').delete().eq('id', id)
-      if (error) throw error
-      triggerToast('success', 'Murid berhasil dihapus.')
-      fetchData()
-    } catch (err: any) {
-      triggerToast('error', err.message || 'Gagal menghapus murid.')
-    }
+  const handleDeleteStudent = (id: string) => {
+    confirm({
+      message: locale === 'id' 
+        ? 'Apakah Anda yakin ingin menghapus murid ini? Riwayat laporan juga akan terpengaruh.' 
+        : 'Are you sure you want to delete this student? Report history will also be affected.',
+      onConfirm: async () => {
+        const { error } = await supabase.from('students').delete().eq('id', id)
+        if (error) throw error
+        triggerToast('success', 'Murid berhasil dihapus.')
+        fetchData()
+      }
+    })
   }
 
   // --- SCHEDULE ACTIONS ---
@@ -349,17 +352,18 @@ export default function StudentsAndSchedulesPage() {
     }
   }
 
-  const handleDeleteSchedule = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus jadwal ini?')) return
-
-    try {
-      const { error } = await supabase.from('schedules').delete().eq('id', id)
-      if (error) throw error
-      triggerToast('success', 'Jadwal berhasil dihapus.')
-      fetchData()
-    } catch (err: any) {
-      triggerToast('error', err.message || 'Gagal menghapus jadwal.')
-    }
+  const handleDeleteSchedule = (id: string) => {
+    confirm({
+      message: locale === 'id'
+        ? 'Apakah Anda yakin ingin menghapus jadwal ini?'
+        : 'Are you sure you want to delete this schedule?',
+      onConfirm: async () => {
+        const { error } = await supabase.from('schedules').delete().eq('id', id)
+        if (error) throw error
+        triggerToast('success', 'Jadwal berhasil dihapus.')
+        fetchData()
+      }
+    })
   }
 
   const toggleStudentSelection = (sid: string) => {
