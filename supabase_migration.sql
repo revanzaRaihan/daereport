@@ -145,15 +145,15 @@ CREATE POLICY "Allow authenticated users to read app_settings"
 
 CREATE POLICY "Allow authenticated users to insert app_settings"
     ON public.app_settings FOR INSERT TO authenticated
-    WITH CHECK (true);
+    WITH CHECK (auth.uid() IS NOT NULL);
 
 CREATE POLICY "Allow authenticated users to update app_settings"
     ON public.app_settings FOR UPDATE TO authenticated
-    USING (true) WITH CHECK (true);
+    USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
 
 CREATE POLICY "Allow authenticated users to delete app_settings"
     ON public.app_settings FOR DELETE TO authenticated
-    USING (true);
+    USING (auth.uid() IS NOT NULL);
 
 -- Catatan: Untuk Setup Storage Bucket 'reports', silakan lakukan langsung melalui GUI Dashboard Supabase Anda
 -- karena alasan keamanan, role default postgres di SQL Editor dilarang mengubah tabel skema storage secara langsung.
@@ -234,7 +234,7 @@ DROP POLICY IF EXISTS "Users can delete their own feedbacks" ON public.feedbacks
 -- 1. Ijinkan siapa saja (anon & authenticated) memasukkan feedback baru
 CREATE POLICY "Allow anonymous insert on feedbacks" 
     ON public.feedbacks FOR INSERT TO anon, authenticated
-    WITH CHECK (true);
+    WITH CHECK (student_id IS NOT NULL);
 
 -- 2. Hanya ijinkan user yang login untuk melihat feedback mereka sendiri
 CREATE POLICY "Users can view their own feedbacks" 
@@ -251,3 +251,31 @@ CREATE POLICY "Users can update their own feedbacks"
 CREATE POLICY "Users can delete their own feedbacks" 
     ON public.feedbacks FOR DELETE TO authenticated
     USING (auth.uid() = user_id);
+
+-- =====================================================================
+-- LANGKAH G: OPTIMALISASI SECURITY BUCKET STORAGE 'REPORTS'
+-- =====================================================================
+
+-- Perbaiki linter warning (menghapus select publik yang mengijinkan list semua file)
+-- Karena bucket 'reports' bertipe publik, ia tidak memerlukan policy SELECT
+-- untuk mengakses gambar via public URL. Menghapus policy select mencegah listing file oleh public/user.
+DROP POLICY IF EXISTS "allow select i3p58f_0" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated users to select reports" ON storage.objects;
+
+-- =====================================================================
+-- LANGKAH H: AKTIFKAN REALTIME REPLICATION (AMAN)
+-- =====================================================================
+
+-- Cek jika tabel feedbacks sudah ada di publikasi sebelum menambahkannya
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_rel pr
+        JOIN pg_publication p ON p.oid = pr.prpubid
+        JOIN pg_class c ON c.oid = pr.prrelid
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE p.pubname = 'supabase_realtime' AND c.relname = 'feedbacks' AND n.nspname = 'public'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.feedbacks;
+    END IF;
+END $$;

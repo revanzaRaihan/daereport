@@ -374,10 +374,14 @@ export default function StudentsAndSchedulesPage() {
     }
   }
 
-  const handleOpenShareModal = () => {
+  const handleOpenShareModal = (specificSchedule?: any) => {
+    const isSchedule = specificSchedule && typeof specificSchedule === 'object' && 'day_of_week' in specificSchedule
     let targetStudents = []
 
-    if (activeTab === 'schedules') {
+    if (isSchedule) {
+      const assignedStudentIds = (specificSchedule.schedule_student || []).map((rel: any) => rel.student_id)
+      targetStudents = students.filter(s => assignedStudentIds.includes(s.id))
+    } else if (activeTab === 'schedules') {
       const assignedStudentIds = Array.from(
         new Set(
           schedules.flatMap(sched => (sched.schedule_student || []).map((rel: any) => rel.student_id))
@@ -398,7 +402,14 @@ export default function StudentsAndSchedulesPage() {
         const slug = slugify(s.name)
         return `${idx + 1}. ${s.name} : ${hostUrl}/p/${slug}.`
       })
-      const text = `PORTAL ORTU\n${shareLines.join('\n')}`
+      
+      let headerText = 'PORTAL ORTU'
+      if (isSchedule) {
+        const dayStr = locale === 'id' ? DAYS_MAP[specificSchedule.day_of_week] : DAYS_MAP_EN[specificSchedule.day_of_week]
+        const timeStr = `${specificSchedule.start_time.substring(0, 5)} - ${specificSchedule.end_time.substring(0, 5)}`
+        headerText = `PORTAL ORTU - ${dayStr} (${timeStr})`
+      }
+      const text = `${headerText}\n${shareLines.join('\n')}`
       setShareText(text)
     }
     
@@ -604,6 +615,13 @@ export default function StudentsAndSchedulesPage() {
                               {locale === 'id' ? DAYS_MAP[sched.day_of_week] : DAYS_MAP_EN[sched.day_of_week]}
                             </span>
                             <div className="flex gap-1">
+                              <button
+                                onClick={() => handleOpenShareModal(sched)}
+                                className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
+                                title={locale === 'id' ? 'Bagikan Portal' : 'Share Portal'}
+                              >
+                                <Share2 className="w-3.5 h-3.5" />
+                              </button>
                               <button
                                 onClick={() => handleOpenScheduleModal(sched)}
                                 className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
