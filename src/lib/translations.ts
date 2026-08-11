@@ -11,6 +11,8 @@ export const translations = {
 
     // Header & Actions
     header_create_ai: "Buat Laporan",
+    mode_ai: "Asisten AI",
+    mode_manual: "Mode Manual",
     btn_generate: "Generate Laporan AI",
     btn_generating: "Membuat Laporan...",
     btn_save: "Simpan ke Riwayat",
@@ -126,6 +128,8 @@ export const translations = {
 
     // Header & Actions
     header_create_ai: "Create Report",
+    mode_ai: "AI Assistant",
+    mode_manual: "Manual Mode",
     btn_generate: "Generate AI Report",
     btn_generating: "Generating Report...",
     btn_save: "Save to History",

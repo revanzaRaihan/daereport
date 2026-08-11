@@ -46,6 +46,7 @@ export default function LaporanBuilderPage() {
   const [behavior, setBehavior] = useState('')
   const [language, setLanguage] = useState<'id' | 'en'>('id')
   const [reportType, setReportType] = useState<'full' | 'overview'>('full')
+  const [mode, setMode] = useState<'ai' | 'manual'>('manual')
   
   // Pending Report ID tracker (if resolving a pending report)
   const [selectedPendingId, setSelectedPendingId] = useState<string | null>(null)
@@ -196,6 +197,20 @@ export default function LaporanBuilderPage() {
     setGeneratedText('')
     setWarningMsg('')
     setStatusMsg(null)
+
+    if (mode === 'manual') {
+      const student = students.find(s => s.id === selectedStudentId)
+      if (!student) {
+        setGenerating(false)
+        return
+      }
+      setTimeout(() => {
+        const manualText = assembleManualReport(student, meetingNumber, reportDate, materi, behavior, language)
+        setGeneratedText(manualText)
+        setGenerating(false)
+      }, 300)
+      return
+    }
 
     try {
       const res = await fetch('/api/generate-report', {
@@ -455,6 +470,7 @@ export default function LaporanBuilderPage() {
             onChange={(val) => setReportType(val as any)}
             placeholder={t('placeholder_type')}
             isSearchable={false}
+            isDisabled={mode === 'manual'}
           />
         </div>
 
@@ -490,6 +506,34 @@ export default function LaporanBuilderPage() {
           {/* Form Body */}
           <div className="space-y-5 pt-2">
 
+            {/* Mode Selector Tab Group (Premium Glassmorphism / Sleek design) */}
+            <div className="grid grid-cols-2 gap-1 p-1 bg-neutral-100/80 backdrop-blur-sm rounded-xl border border-black/5">
+              <button
+                type="button"
+                onClick={() => setMode('ai')}
+                className={`flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold rounded-lg transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer ${
+                  mode === 'ai'
+                    ? 'bg-white text-black shadow-[0_2px_4px_rgba(0,0,0,0.04)] border border-black/5 scale-[1.01]'
+                    : 'text-neutral-500 hover:text-black hover:bg-neutral-50/50'
+                }`}
+              >
+                <Sparkles className={`w-3.5 h-3.5 ${mode === 'ai' ? 'text-primary animate-pulse' : 'text-neutral-400'}`} />
+                <span>{locale === 'id' ? 'Asisten AI' : 'AI Assistant'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('manual')}
+                className={`flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold rounded-lg transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer ${
+                  mode === 'manual'
+                    ? 'bg-white text-black shadow-[0_2px_4px_rgba(0,0,0,0.04)] border border-black/5 scale-[1.01]'
+                    : 'text-neutral-500 hover:text-black hover:bg-neutral-50/50'
+                }`}
+              >
+                <PenTool className={`w-3.5 h-3.5 ${mode === 'manual' ? 'text-black' : 'text-neutral-400'}`} />
+                <span>{locale === 'id' ? 'Mode Manual' : 'Manual Mode'}</span>
+              </button>
+            </div>
+
             {/* Manual Meeting Number & Date Override */}
             <div className="grid grid-cols-2 gap-4">
               <div className="border border-black/10 focus-within:border-black focus-within:shadow-[0_0_0_1px_#000000] rounded-xl p-3 bg-white transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20">
@@ -524,19 +568,21 @@ export default function LaporanBuilderPage() {
             </div>
 
             {/* Material Area */}
-            <div className="border border-black/10 focus-within:border-black focus-within:shadow-[0_0_0_1px_#000000] rounded-xl p-4 bg-white transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20">
-              <label className="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider font-mono mb-1.5">
-                {t('label_material')}
-              </label>
-              <textarea
-                required
-                rows={3}
-                value={materi}
-                onChange={(e) => setMateri(e.target.value)}
-                placeholder={t('placeholder_material')}
-                className="w-full bg-transparent border-0 p-0 text-xs text-black leading-relaxed focus:ring-0 focus:outline-none resize-y min-h-[70px]"
-              />
-            </div>
+            {mode === 'ai' && (
+              <div className="border border-black/10 focus-within:border-black focus-within:shadow-[0_0_0_1px_#000000] rounded-xl p-4 bg-white transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20">
+                <label className="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider font-mono mb-1.5">
+                  {t('label_material')}
+                </label>
+                <textarea
+                  required={mode === 'ai'}
+                  rows={3}
+                  value={materi}
+                  onChange={(e) => setMateri(e.target.value)}
+                  placeholder={t('placeholder_material')}
+                  className="w-full bg-transparent border-0 p-0 text-xs text-black leading-relaxed focus:ring-0 focus:outline-none resize-y min-h-[70px]"
+                />
+              </div>
+            )}
 
             {/* Behavior Area */}
             <div className="border border-black/10 focus-within:border-black focus-within:shadow-[0_0_0_1px_#000000] rounded-xl p-4 bg-white transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20">
@@ -631,8 +677,17 @@ export default function LaporanBuilderPage() {
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4 text-background" />
-                  <span>{t('btn_generate')}</span>
+                  {mode === 'ai' ? (
+                    <>
+                      <Send className="w-4 h-4 text-background" />
+                      <span>{t('btn_generate')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <PenTool className="w-4 h-4 text-background" />
+                      <span>{locale === 'id' ? 'Format Laporan' : 'Format Report'}</span>
+                    </>
+                  )}
                 </>
               )}
             </button>
@@ -744,4 +799,36 @@ export default function LaporanBuilderPage() {
       </div>
     </div>
   )
+}
+
+function escapeRegex(string: string) {
+  return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&')
+}
+
+function assembleManualReport(
+  student: { name: string; subject: string },
+  meetingNumber: number,
+  date: string,
+  materi: string,
+  behavior: string,
+  language: 'id' | 'en' = 'id'
+): string {
+  // Format date to DD/MM/YYYY
+  let formattedDate = ''
+  try {
+    const dateObj = new Date(date)
+    const day = String(dateObj.getDate()).padStart(2, '0')
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+    const year = dateObj.getFullYear()
+    formattedDate = `${day}/${month}/${year}`
+  } catch (e) {
+    formattedDate = date
+  }
+
+  const line1 = formattedDate
+  const line2 = `${student.subject} Meeting ${meetingNumber}`
+
+  const line3 = (behavior || '').trim()
+
+  return `${line1}\n${line2}\n${line3}`
 }

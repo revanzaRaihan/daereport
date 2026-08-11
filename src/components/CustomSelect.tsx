@@ -15,6 +15,7 @@ interface CustomSelectProps {
   placeholder?: string;
   isSearchable?: boolean;
   className?: string;
+  isDisabled?: boolean;
 }
 
 export default function CustomSelect({
@@ -23,7 +24,8 @@ export default function CustomSelect({
   onChange,
   placeholder = 'Pilih...',
   isSearchable = true,
-  className = ''
+  className = '',
+  isDisabled = false
 }: CustomSelectProps) {
   const id = useId();
   const selectedOption = options.find(opt => opt.value === value) || null;
@@ -31,16 +33,17 @@ export default function CustomSelect({
   const customStyles: StylesConfig<OptionType, false> = {
     control: (provided, state) => ({
       ...provided,
-      backgroundColor: 'var(--card)',
+      backgroundColor: state.isDisabled ? 'rgba(0, 0, 0, 0.03)' : 'var(--card)',
       borderColor: state.isFocused ? 'var(--primary)' : 'var(--border-color)',
       borderRadius: '0.75rem', // rounded-xl
       boxShadow: state.isFocused ? '0 0 0 1px var(--primary)' : 'none',
       minHeight: '42px',
       fontSize: '0.825rem',
       fontWeight: 600,
-      color: 'var(--text-primary)',
+      color: state.isDisabled ? 'var(--text-secondary)' : 'var(--text-primary)',
       transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-      cursor: 'pointer',
+      cursor: state.isDisabled ? 'not-allowed' : 'pointer',
+      opacity: state.isDisabled ? 0.6 : 1,
       '&:hover': {
         borderColor: state.isFocused ? 'var(--primary)' : 'var(--border-color)'
       }
@@ -84,13 +87,13 @@ export default function CustomSelect({
     option: (provided, state) => ({
       ...provided,
       backgroundColor: state.isSelected 
-        ? 'var(--primary)' 
-        : state.isFocused 
-          ? 'var(--border-color)' 
-          : 'var(--card)',
+      ? 'var(--primary)' 
+      : state.isFocused 
+        ? 'var(--border-color)' 
+        : 'var(--card)',
       color: state.isSelected 
-        ? 'var(--background)' 
-        : 'var(--text-primary)',
+      ? 'var(--background)' 
+      : 'var(--text-primary)',
       fontSize: '0.825rem',
       fontWeight: state.isSelected ? 700 : 500,
       padding: '10px 14px',
@@ -112,6 +115,7 @@ export default function CustomSelect({
         placeholder={placeholder}
         isSearchable={isSearchable}
         styles={customStyles}
+        isDisabled={isDisabled}
       />
     </div>
   );
