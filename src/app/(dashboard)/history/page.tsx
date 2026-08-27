@@ -60,6 +60,18 @@ function getRelativeTime(dateString: string, locale: 'id' | 'en'): string {
   }
 }
 
+function getStudentSlug(studentName: string): string {
+  return studentName
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '')
+}
+
 export default function HistoryPage() {
   const supabase = createClient()
   const { t, locale } = useTranslation()
@@ -79,22 +91,39 @@ export default function HistoryPage() {
   // Copy State Tracker
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [copiedStudentId, setCopiedStudentId] = useState<string | null>(null)
+  const [copiedGroupId, setCopiedGroupId] = useState<string | null>(null)
 
   const handleShareLink = (studentName: string, studentId: string) => {
-    const slug = studentName
-      .toString()
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-')
-      .replace(/[^\w\-]+/g, '')
-      .replace(/\-\-+/g, '-')
-      .replace(/^-+/, '')
-      .replace(/-+$/, '')
+    const slug = getStudentSlug(studentName)
     const url = `${window.location.origin}/p/${slug}`
     navigator.clipboard.writeText(url)
     setCopiedStudentId(studentId)
     setTimeout(() => setCopiedStudentId(null), 2000)
     triggerToast('success', locale === 'id' ? 'Link portal orang tua berhasil disalin!' : 'Parent portal link copied successfully!')
+  }
+
+  const handleShareCategoryPortals = (group: any) => {
+    if (!group.studentGroups || group.studentGroups.length === 0) return
+
+    const lines = ['UPDATED REPORTS:']
+    group.studentGroups.forEach((studentGroup: any, index: number) => {
+      const slug = getStudentSlug(studentGroup.studentName)
+      const url = `${window.location.origin}/p/${slug}`
+      lines.push(`${index + 1}. ${studentGroup.studentName} : ${url}`)
+    })
+
+    const textToCopy = lines.join('\n')
+    navigator.clipboard.writeText(textToCopy)
+    
+    setCopiedGroupId(group.titleId)
+    setTimeout(() => setCopiedGroupId(null), 2000)
+
+    triggerToast(
+      'success',
+      locale === 'id'
+        ? 'Daftar portal orang tua berhasil disalin!'
+        : 'Parent portal list copied successfully!'
+    )
   }
 
   // Expanded States
@@ -488,6 +517,21 @@ export default function HistoryPage() {
                   <span className="text-xs font-extrabold text-neutral-400 uppercase tracking-widest font-mono select-none">
                     {locale === 'id' ? group.titleId : group.titleEn}
                   </span>
+                  
+                  <button
+                    onClick={() => handleShareCategoryPortals(group)}
+                    className={`
+                      px-2 py-0.5 rounded-lg border text-[9px] font-bold flex items-center gap-1 transition-all cursor-pointer h-6 font-mono uppercase tracking-wider select-none
+                      ${copiedGroupId === group.titleId
+                        ? 'bg-black border-black text-white'
+                        : 'bg-white border-black/10 text-neutral-500 hover:text-black hover:bg-neutral-100'}
+                    `}
+                    title={locale === 'id' ? 'Salin Semua Link Portal' : 'Copy All Portal Links'}
+                  >
+                    {copiedGroupId === group.titleId ? <Check className="w-3 h-3" /> : <Share2 className="w-3 h-3" />}
+                    <span>{copiedGroupId === group.titleId ? (locale === 'id' ? 'Disalin' : 'Copied') : (locale === 'id' ? 'Bagikan Portal' : 'Share Portal')}</span>
+                  </button>
+
                   <div className="h-px bg-black/10 flex-1" />
                   <span className="text-[10px] font-bold text-neutral-400 font-mono uppercase bg-neutral-100 px-2.5 py-0.5 rounded-lg border border-black/5 select-none">
                     {group.studentGroups.length} {locale === 'id' ? 'Murid' : 'Students'}
