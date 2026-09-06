@@ -366,17 +366,6 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                 </span>
               </div>
 
-              {/* Total Meetings */}
-              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-2xl sm:rounded-full px-4 py-2 sm:px-5 sm:py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300 gap-2">
-                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 whitespace-nowrap font-[var(--font-rounded,sans-serif)]">
-                  Total Pertemuan:
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-black rounded-full whitespace-nowrap shrink-0">
-                  <GraduationCap className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  {reports.length} Sesi Selesai
-                </span>
-              </div>
-
               {/* Latest Meeting Date */}
               <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-2xl sm:rounded-full px-4 py-2 sm:px-5 sm:py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300 gap-2">
                 <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 whitespace-nowrap font-[var(--font-rounded,sans-serif)]">
@@ -385,6 +374,17 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                 <span className="text-xs sm:text-sm font-bold text-neutral-700 flex items-center gap-1.5 whitespace-nowrap shrink-0">
                   <Calendar className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                   <span>{latestReport ? formatIndonesianDate(latestReport.report_date) : 'Belum ada data'}</span>
+                </span>
+              </div>
+
+              {/* Total Meetings */}
+              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-2xl sm:rounded-full px-4 py-2 sm:px-5 sm:py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300 gap-2">
+                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 whitespace-nowrap font-[var(--font-rounded,sans-serif)]">
+                  Total Pertemuan:
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-black rounded-full whitespace-nowrap shrink-0">
+                  <GraduationCap className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  {reports.length} Sesi Selesai
                 </span>
               </div>
 
@@ -431,34 +431,15 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                       #{latestReport.meeting_number}
                     </div>
 
-                    {/* Meeting Meta Header */}
-                    <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 relative z-10">
-                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5">
-                        <span className="px-3 py-1.5 sm:px-4 sm:py-1.5 bg-[#7C3AED] text-white text-xs sm:text-sm font-black rounded-full shadow-xs uppercase tracking-wider font-[var(--font-rounded,sans-serif)] whitespace-nowrap shrink-0">
-                          Pertemuan Ke-{latestReport.meeting_number}
-                        </span>
-                        <span className="text-xs sm:text-sm font-bold text-neutral-600 flex items-center gap-1.5 bg-white/90 px-3 py-1.5 rounded-full border border-purple-100 whitespace-nowrap shrink-0">
-                          <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 shrink-0" />
-                          <span>{formatIndonesianDate(latestReport.report_date)}</span>
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={() => handleCopyText(latestReport.teachersNote, latestReport.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-1.5 bg-white hover:bg-purple-50 text-purple-800 border-2 border-purple-200 rounded-full text-xs font-bold shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap shrink-0 ml-auto sm:ml-0"
-                      >
-                        {copiedReportId === latestReport.id ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
-                            <span className="text-emerald-600 font-extrabold whitespace-nowrap">Disalin</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 shrink-0" />
-                            <span className="whitespace-nowrap">Salin Catatan</span>
-                          </>
-                        )}
-                      </button>
+                    {/* Meeting Meta Header: Tanggal on LEFT, Pertemuan on RIGHT */}
+                    <div className="flex items-center justify-between gap-2.5 relative z-10">
+                      <span className="text-xs sm:text-sm font-bold text-neutral-600 flex items-center gap-1.5 bg-white/90 px-3 py-1.5 rounded-full border border-purple-100 whitespace-nowrap shrink-0">
+                        <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 shrink-0" />
+                        <span>{formatIndonesianDate(latestReport.report_date)}</span>
+                      </span>
+                      <span className="px-3.5 py-1.5 sm:px-4 sm:py-1.5 bg-[#7C3AED] text-white text-xs sm:text-sm font-black rounded-full shadow-xs uppercase tracking-wider font-[var(--font-rounded,sans-serif)] whitespace-nowrap shrink-0">
+                        Pertemuan Ke-{latestReport.meeting_number}
+                      </span>
                     </div>
 
                     {/* Materi Pembelajaran */}
