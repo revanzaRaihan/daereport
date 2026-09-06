@@ -19,7 +19,8 @@ import {
   X,
   GraduationCap,
   History,
-  MessageCircle
+  MessageCircle,
+  FileText
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 
@@ -92,6 +93,7 @@ function cleanMateri(materiStr: string): string {
 }
 
 export default function ParentDashboard({ student, reports }: ParentDashboardProps) {
+  const [activeTab, setActiveTab] = useState<'report' | 'history'>('report')
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null)
   const [feedbackText, setFeedbackText] = useState('')
   const [sendingFeedback, setSendingFeedback] = useState(false)
@@ -191,10 +193,10 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
         <div className="absolute bottom-24 left-10 text-yellow-200 text-4xl font-black select-none opacity-60">✦</div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-3 sm:px-6 relative z-10 print:max-w-none print:px-0">
+      <div className="max-w-4xl mx-auto px-2 sm:px-6 relative z-10 print:max-w-none print:px-0">
 
         {/* Top Control Bar (Share & Print) */}
-        <div className="flex justify-between items-center mb-4 px-2 print:hidden">
+        <div className="flex justify-between items-center mb-3 sm:mb-4 px-1 sm:px-2 print:hidden">
           <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3.5 py-1.5 rounded-full text-white text-xs font-bold tracking-wide shadow-sm border border-white/20">
             <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
             <span>Portal Laporan Belajar Siswa</span>
@@ -231,10 +233,10 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
         </div>
 
         {/* MAIN REPORT CARD WORKSHEET */}
-        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl shadow-purple-950/25 border-4 sm:border-[6px] border-white overflow-hidden transition-all print:border-0 print:shadow-none print:rounded-none">
+        <div className="bg-white rounded-[1.75rem] sm:rounded-[2.5rem] shadow-2xl shadow-purple-950/25 border-2 sm:border-[6px] border-white overflow-hidden transition-all print:border-0 print:shadow-none print:rounded-none">
           
           {/* PLAYFUL HEADER BANNER (From reference image) */}
-          <div className="relative bg-gradient-to-r from-[#1877F2] via-[#2563EB] to-[#4F46E5] text-white pt-8 pb-9 px-6 sm:px-10 overflow-hidden select-none">
+          <div className="relative bg-gradient-to-r from-[#1877F2] via-[#2563EB] to-[#4F46E5] text-white pt-6 sm:pt-8 pb-7 sm:pb-9 px-4 sm:px-10 overflow-hidden select-none">
             
             {/* Vector Shapes */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -338,310 +340,344 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
           </div>
 
           {/* MAIN WORKSHEET BODY */}
-          <div className="p-6 sm:p-8 space-y-8 bg-white">
+          <div className="p-3.5 sm:p-7 lg:p-8 space-y-6 sm:space-y-8 bg-white">
             
             {/* STUDENT IDENTITY SECTION: 4 Pill Badges */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3.5">
               
               {/* Student Name */}
-              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-full px-5 py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300">
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 font-[var(--font-rounded,sans-serif)]">
+              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-2xl sm:rounded-full px-4 py-2 sm:px-5 sm:py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300 gap-2">
+                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 whitespace-nowrap font-[var(--font-rounded,sans-serif)]">
                   Student Name:
                 </span>
-                <span className="text-base sm:text-lg font-black text-neutral-900 truncate pl-3 font-[var(--font-rounded,sans-serif)]">
+                <span className="text-sm sm:text-base font-black text-neutral-900 truncate text-right font-[var(--font-rounded,sans-serif)]">
                   {student.name}
                 </span>
               </div>
 
               {/* Subject / Level */}
-              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-full px-5 py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300">
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 font-[var(--font-rounded,sans-serif)]">
+              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-2xl sm:rounded-full px-4 py-2 sm:px-5 sm:py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300 gap-2">
+                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 whitespace-nowrap font-[var(--font-rounded,sans-serif)]">
                   Level & Subject:
                 </span>
-                <span className="text-xs sm:text-sm font-extrabold text-neutral-800 truncate pl-3 flex items-center gap-1.5">
+                <span className="text-xs sm:text-sm font-extrabold text-neutral-800 truncate text-right flex items-center justify-end gap-1.5 min-w-0">
                   <BookOpen className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                  {student.subject}
+                  <span className="truncate">{student.subject}</span>
                 </span>
               </div>
 
               {/* Total Meetings */}
-              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-full px-5 py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300">
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 font-[var(--font-rounded,sans-serif)]">
+              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-2xl sm:rounded-full px-4 py-2 sm:px-5 sm:py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300 gap-2">
+                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 whitespace-nowrap font-[var(--font-rounded,sans-serif)]">
                   Total Pertemuan:
                 </span>
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-black rounded-full">
-                  <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-black rounded-full whitespace-nowrap shrink-0">
+                  <GraduationCap className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   {reports.length} Sesi Selesai
                 </span>
               </div>
 
               {/* Latest Meeting Date */}
-              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-full px-5 py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300">
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 font-[var(--font-rounded,sans-serif)]">
+              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-2xl sm:rounded-full px-4 py-2 sm:px-5 sm:py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300 gap-2">
+                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 whitespace-nowrap font-[var(--font-rounded,sans-serif)]">
                   Tanggal Terkini:
                 </span>
-                <span className="text-xs sm:text-sm font-bold text-neutral-700 flex items-center gap-1.5 pl-3">
+                <span className="text-xs sm:text-sm font-bold text-neutral-700 flex items-center gap-1.5 whitespace-nowrap shrink-0">
                   <Calendar className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                  {latestReport ? formatIndonesianDate(latestReport.report_date) : 'Belum ada data'}
+                  <span>{latestReport ? formatIndonesianDate(latestReport.report_date) : 'Belum ada data'}</span>
                 </span>
               </div>
 
             </div>
 
-            {/* FEATURED: LAPORAN PERTEMUAN TERBARU (With large, comfortable reading font for parents) */}
-            {latestReport ? (
-              <section className="space-y-4">
-                
-                {/* Section Header */}
-                <div className="flex items-center justify-between pb-1 border-b-2 border-purple-100">
-                  <div className="flex items-center gap-2">
-                    <span className="flex gap-1">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-purple-600" />
-                    </span>
-                    <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-purple-950 font-[var(--font-rounded,sans-serif)]">
-                      Laporan Pertemuan Terbaru
-                    </h2>
-                  </div>
+            {/* 2-TAB SEGMENTED CONTROLLER: RAPORT & HISTORY */}
+            <div className="flex justify-center pt-1 pb-1">
+              <div className="bg-purple-100/90 p-1 rounded-2xl sm:rounded-full flex items-center gap-1 border border-purple-200/80 shadow-xs w-full max-w-sm sm:max-w-md">
+                <button
+                  onClick={() => setActiveTab('report')}
+                  className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl sm:rounded-full text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer select-none font-[var(--font-rounded,sans-serif)] ${
+                    activeTab === 'report'
+                      ? 'bg-[#7C3AED] text-white shadow-sm'
+                      : 'text-purple-900 hover:text-purple-950 hover:bg-purple-200/50'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <span>Raport Terkini</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('history')}
+                  className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl sm:rounded-full text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer select-none font-[var(--font-rounded,sans-serif)] ${
+                    activeTab === 'history'
+                      ? 'bg-[#7C3AED] text-white shadow-sm'
+                      : 'text-purple-900 hover:text-purple-950 hover:bg-purple-200/50'
+                  }`}
+                >
+                  <History className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <span>History Sesi ({reports.length})</span>
+                </button>
+              </div>
+            </div>
 
-                  <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-black rounded-full font-[var(--font-rounded,sans-serif)]">
-                    Sesi Terkini
-                  </span>
-                </div>
-
-                {/* Latest Report Card */}
-                <div className="bg-gradient-to-b from-[#FAF5FF] to-white border-2 border-purple-200 rounded-[2rem] p-6 sm:p-8 space-y-6 shadow-md relative overflow-hidden">
+            {/* TAB 1: RAPORT TERKINI */}
+            {activeTab === 'report' && (
+              latestReport ? (
+                <section className="space-y-4 animate-in fade-in duration-200">
                   
-                  {/* Watermark badge */}
-                  <div className="absolute top-4 right-6 text-purple-200/50 font-black text-6xl select-none pointer-events-none font-[var(--font-rounded,sans-serif)]">
-                    #{latestReport.meeting_number}
-                  </div>
-
-                  {/* Meeting Meta Header */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 relative z-10">
-                    <div className="flex items-center gap-2.5">
-                      <span className="px-4 py-1.5 bg-[#7C3AED] text-white text-xs sm:text-sm font-black rounded-full shadow-xs uppercase tracking-wider font-[var(--font-rounded,sans-serif)]">
-                        Pertemuan Ke-{latestReport.meeting_number}
-                      </span>
-                      <span className="text-xs sm:text-sm font-bold text-neutral-600 flex items-center gap-1.5 bg-white/80 px-3 py-1 rounded-full border border-purple-100">
-                        <Calendar className="w-4 h-4 text-purple-600" />
-                        {formatIndonesianDate(latestReport.report_date)}
-                      </span>
+                  {/* Latest Report Card */}
+                  <div className="bg-gradient-to-b from-[#FAF5FF] to-white border-2 border-purple-200 rounded-2xl sm:rounded-[2rem] p-3.5 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 shadow-md relative overflow-hidden">
+                    
+                    {/* Watermark badge (desktop only so it doesn't crowd mobile) */}
+                    <div className="absolute top-4 right-6 text-purple-200/40 font-black text-6xl select-none pointer-events-none font-[var(--font-rounded,sans-serif)] hidden sm:block">
+                      #{latestReport.meeting_number}
                     </div>
 
-                    <button
-                      onClick={() => handleCopyText(latestReport.teachersNote, latestReport.id)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-purple-50 text-purple-800 border-2 border-purple-200 rounded-full text-xs font-bold shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                    >
-                      {copiedReportId === latestReport.id ? (
-                        <>
-                          <Check className="w-4 h-4 text-emerald-600" />
-                          <span className="text-emerald-600 font-extrabold">Disalin</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4 text-purple-600" />
-                          <span>Salin Catatan</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Materi Pembelajaran */}
-                  <div className="space-y-2 relative z-10">
-                    <div className="flex items-center gap-2 text-xs font-black text-purple-900 uppercase tracking-wider font-[var(--font-rounded,sans-serif)]">
-                      <BookOpen className="w-4 h-4 text-[#7C3AED]" />
-                      <span>Materi yang Dipelajari:</span>
-                    </div>
-                    <div className="bg-white border-2 border-purple-100 rounded-2xl px-5 py-4 shadow-xs flex items-center justify-between">
-                      <span className="text-base sm:text-lg font-black text-neutral-900 font-[var(--font-rounded,sans-serif)]">
-                        {cleanMateri(latestReport.materi || latestReport.lessonCompleted)}
-                      </span>
-                      <span className="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-black rounded-full border border-purple-100 font-[var(--font-rounded,sans-serif)]">
-                        Selesai
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Evaluasi Belajar Guru (Large, readable font specifically tailored for parents) */}
-                  <div className="space-y-2.5 relative z-10">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <MessageCircle className="w-5 h-5 text-purple-600" />
-                        <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-neutral-900 font-[var(--font-rounded,sans-serif)]">
-                          Evaluasi Belajar Siswa:
-                        </h3>
-                      </div>
-                      <span className="text-xs font-extrabold text-purple-700 bg-purple-100/70 px-3 py-0.5 rounded-full">
-                        Catatan Guru
-                      </span>
-                    </div>
-
-                    {/* LARGE FONT NOTE CONTAINER FOR EASY READING */}
-                    <div className="bg-white border-2 border-purple-200/90 rounded-2xl p-5 sm:p-7 shadow-xs">
-                      <div className="text-neutral-900 text-base sm:text-lg lg:text-[18.5px] leading-[1.8] sm:leading-[1.9] font-medium whitespace-pre-wrap tracking-normal">
-                        {latestReport.teachersNote}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Rekomendasi Latihan (if available) */}
-                  {latestReport.trainingRecommendation && latestReport.trainingRecommendation !== 'Tidak ada rekomendasi khusus.' && (
-                    <div className="space-y-2 relative z-10">
-                      <div className="flex items-center gap-2 text-xs font-black text-amber-900 uppercase tracking-wider font-[var(--font-rounded,sans-serif)]">
-                        <Award className="w-4 h-4 text-amber-600" />
-                        <span>Rekomendasi Latihan di Rumah:</span>
-                      </div>
-                      <div className="bg-amber-50/90 border-2 border-amber-200 rounded-2xl p-4 sm:p-5 text-amber-950 text-sm sm:text-base font-medium leading-relaxed shadow-xs">
-                        {latestReport.trainingRecommendation}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Dokumentasi Foto Kelas */}
-                  {latestReport.image_url && (
-                    <div className="space-y-2.5 relative z-10">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black uppercase tracking-wider text-neutral-800 font-[var(--font-rounded,sans-serif)]">
-                          Dokumentasi Pembelajaran:
+                    {/* Meeting Meta Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 relative z-10">
+                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5">
+                        <span className="px-3 py-1.5 sm:px-4 sm:py-1.5 bg-[#7C3AED] text-white text-xs sm:text-sm font-black rounded-full shadow-xs uppercase tracking-wider font-[var(--font-rounded,sans-serif)] whitespace-nowrap shrink-0">
+                          Pertemuan Ke-{latestReport.meeting_number}
                         </span>
-                        <span className="text-xs font-bold text-neutral-400">
-                          Klik foto untuk memperbesar
+                        <span className="text-xs sm:text-sm font-bold text-neutral-600 flex items-center gap-1.5 bg-white/90 px-3 py-1.5 rounded-full border border-purple-100 whitespace-nowrap shrink-0">
+                          <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 shrink-0" />
+                          <span>{formatIndonesianDate(latestReport.report_date)}</span>
                         </span>
                       </div>
 
-                      <div 
-                        onClick={() => setPhotoPreview(latestReport.image_url)}
-                        className="rounded-2xl overflow-hidden border-4 border-white shadow-md bg-neutral-100 aspect-video relative group cursor-pointer"
+                      <button
+                        onClick={() => handleCopyText(latestReport.teachersNote, latestReport.id)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-1.5 bg-white hover:bg-purple-50 text-purple-800 border-2 border-purple-200 rounded-full text-xs font-bold shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap shrink-0 ml-auto sm:ml-0"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
-                          src={latestReport.image_url} 
-                          alt="Dokumentasi Kelas" 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-purple-950/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <span className="bg-white/95 text-purple-950 px-4 py-2 rounded-full text-xs font-black shadow-md flex items-center gap-1.5">
-                            <Maximize2 className="w-3.5 h-3.5" />
-                            Buka Foto Penuh
+                        {copiedReportId === latestReport.id ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
+                            <span className="text-emerald-600 font-extrabold whitespace-nowrap">Disalin</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 shrink-0" />
+                            <span className="whitespace-nowrap">Salin Catatan</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Materi Pembelajaran */}
+                    <div className="space-y-2 relative z-10">
+                      <div className="flex items-center gap-2 text-xs font-black text-purple-900 uppercase tracking-wider font-[var(--font-rounded,sans-serif)]">
+                        <BookOpen className="w-4 h-4 text-[#7C3AED] shrink-0" />
+                        <span>Materi yang Dipelajari:</span>
+                      </div>
+                      <div className="bg-white border-2 border-purple-100 rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 shadow-xs flex items-center justify-between gap-3">
+                        <span className="text-base sm:text-lg font-black text-neutral-900 font-[var(--font-rounded,sans-serif)] whitespace-nowrap truncate">
+                          {cleanMateri(latestReport.materi || latestReport.lessonCompleted)}
+                        </span>
+                        <span className="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-black rounded-full border border-purple-100 font-[var(--font-rounded,sans-serif)] whitespace-nowrap shrink-0">
+                          Selesai
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Evaluasi Belajar Guru (Large, readable font specifically tailored for parents) */}
+                    <div className="space-y-2.5 relative z-10">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 shrink-0" />
+                          <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-neutral-900 font-[var(--font-rounded,sans-serif)] whitespace-nowrap truncate">
+                            Evaluasi Belajar Siswa:
+                          </h3>
+                        </div>
+                        <span className="text-xs font-extrabold text-purple-700 bg-purple-100/70 px-2.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                          Catatan Guru
+                        </span>
+                      </div>
+
+                      {/* LARGE FONT NOTE CONTAINER FOR EASY READING */}
+                      <div className="bg-white border-2 border-purple-200/90 rounded-2xl p-4 sm:p-7 shadow-xs">
+                        <div className="text-neutral-900 text-base sm:text-lg lg:text-[18.5px] leading-[1.8] sm:leading-[1.9] font-medium whitespace-pre-wrap tracking-normal">
+                          {latestReport.teachersNote}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Rekomendasi Latihan (if available) */}
+                    {latestReport.trainingRecommendation && latestReport.trainingRecommendation !== 'Tidak ada rekomendasi khusus.' && (
+                      <div className="space-y-2 relative z-10">
+                        <div className="flex items-center gap-2 text-xs font-black text-amber-900 uppercase tracking-wider font-[var(--font-rounded,sans-serif)]">
+                          <Award className="w-4 h-4 text-amber-600" />
+                          <span>Rekomendasi Latihan di Rumah:</span>
+                        </div>
+                        <div className="bg-amber-50/90 border-2 border-amber-200 rounded-2xl p-4 sm:p-5 text-amber-950 text-sm sm:text-base font-medium leading-relaxed shadow-xs">
+                          {latestReport.trainingRecommendation}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dokumentasi Foto Kelas */}
+                    {latestReport.image_url && (
+                      <div className="space-y-2.5 relative z-10">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black uppercase tracking-wider text-neutral-800 font-[var(--font-rounded,sans-serif)]">
+                            Dokumentasi Pembelajaran:
+                          </span>
+                          <span className="text-xs font-bold text-neutral-400">
+                            Klik foto untuk memperbesar
                           </span>
                         </div>
+
+                        <div 
+                          onClick={() => setPhotoPreview(latestReport.image_url)}
+                          className="rounded-2xl overflow-hidden border-4 border-white shadow-md bg-neutral-100 aspect-video relative group cursor-pointer"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={latestReport.image_url} 
+                            alt="Dokumentasi Kelas" 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <div className="absolute inset-0 bg-purple-950/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="bg-white/95 text-purple-950 px-4 py-2 rounded-full text-xs font-black shadow-md flex items-center gap-1.5">
+                              <Maximize2 className="w-3.5 h-3.5" />
+                              Buka Foto Penuh
+                            </span>
+                          </div>
+                        </div>
                       </div>
+                    )}
+
+                  </div>
+
+                  {/* Switch to History Link */}
+                  {pastReports.length > 0 && (
+                    <div className="text-center pt-2">
+                      <button
+                        onClick={() => setActiveTab('history')}
+                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-purple-700 hover:text-purple-950 underline underline-offset-4 cursor-pointer"
+                      >
+                        <History className="w-3.5 h-3.5" />
+                        <span>Lihat riwayat {pastReports.length} pertemuan sebelumnya →</span>
+                      </button>
                     </div>
                   )}
 
+                </section>
+              ) : (
+                <div className="bg-purple-50/60 border-2 border-dashed border-purple-200 rounded-3xl p-8 text-center text-purple-400 text-sm font-bold">
+                  Belum ada laporan pertemuan yang tersimpan untuk murid ini.
                 </div>
-              </section>
-            ) : (
-              <div className="bg-purple-50/60 border-2 border-dashed border-purple-200 rounded-3xl p-8 text-center text-purple-400 text-sm font-bold">
-                Belum ada laporan pertemuan yang tersimpan untuk murid ini.
-              </div>
+              )
             )}
 
-            {/* RIWAYAT PERTEMUAN SEBELUMNYA (History of past meetings) */}
-            {pastReports.length > 0 && (
-              <section className="space-y-4 pt-4 border-t-2 border-neutral-100">
-                <div className="flex items-center justify-between pb-1">
-                  <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-purple-950 flex items-center gap-2 font-[var(--font-rounded,sans-serif)]">
+            {/* TAB 2: RIWAYAT / HISTORY */}
+            {activeTab === 'history' && (
+              <section className="space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between pb-1 border-b-2 border-purple-100">
+                  <div className="flex items-center gap-2">
                     <History className="w-4 h-4 text-purple-600" />
-                    Riwayat Pertemuan Sebelumnya ({pastReports.length})
-                  </h3>
+                    <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-purple-950 font-[var(--font-rounded,sans-serif)]">
+                      Riwayat Semua Pertemuan ({reports.length})
+                    </h3>
+                  </div>
                   <span className="text-xs font-bold text-neutral-400">
-                    Klik untuk melihat evaluasi
+                    Klik sesi untuk melihat catatan
                   </span>
                 </div>
 
-                <div className="border-2 border-neutral-200/90 rounded-3xl bg-white overflow-hidden divide-y divide-neutral-100 shadow-xs">
-                  {pastReports.map((report) => {
-                    const isExpanded = expandedReportId === report.id
+                {reports.length > 0 ? (
+                  <div className="border-2 border-neutral-200/90 rounded-3xl bg-white overflow-hidden divide-y divide-neutral-100 shadow-xs">
+                    {reports.map((report) => {
+                      const isExpanded = expandedReportId === report.id
 
-                    return (
-                      <div key={`history-${report.id}`} className="transition-all">
-                        
-                        {/* Accordion Trigger */}
-                        <div 
-                          onClick={() => setExpandedReportId(isExpanded ? null : report.id)}
-                          className="flex items-center justify-between p-4 sm:p-5 cursor-pointer hover:bg-purple-50/50 select-none transition-colors"
-                        >
-                          <div className="flex items-center gap-3 sm:gap-4">
-                            <span className="px-3.5 py-1 bg-neutral-100 text-neutral-700 rounded-full text-xs font-black font-[var(--font-rounded,sans-serif)] shrink-0">
-                              Pertemuan #{report.meeting_number}
-                            </span>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-3">
-                              <span className="text-xs sm:text-sm font-bold text-neutral-800 line-clamp-1">
-                                {cleanMateri(report.materi || report.lessonCompleted)}
+                      return (
+                        <div key={`history-tab-${report.id}`} className="transition-all">
+                          
+                          {/* Accordion Trigger */}
+                          <div 
+                            onClick={() => setExpandedReportId(isExpanded ? null : report.id)}
+                            className="flex items-center justify-between p-3.5 sm:p-5 cursor-pointer hover:bg-purple-50/50 select-none transition-colors gap-2"
+                          >
+                            <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
+                              <span className="px-3 py-1 bg-purple-50 text-purple-800 border border-purple-100 rounded-full text-xs font-black font-[var(--font-rounded,sans-serif)] shrink-0 whitespace-nowrap">
+                                Pertemuan #{report.meeting_number}
                               </span>
-                              <span className="text-xs text-neutral-400 font-semibold flex items-center gap-1">
-                                <Calendar className="w-3.5 h-3.5" />
-                                {formatIndonesianDate(report.report_date)}
-                              </span>
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-3 min-w-0">
+                                <span className="text-xs sm:text-sm font-bold text-neutral-800 truncate">
+                                  {cleanMateri(report.materi || report.lessonCompleted)}
+                                </span>
+                                <span className="text-xs text-neutral-400 font-semibold flex items-center gap-1 whitespace-nowrap shrink-0">
+                                  <Calendar className="w-3.5 h-3.5" />
+                                  <span>{formatIndonesianDate(report.report_date)}</span>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <ChevronDown 
+                                className={`w-5 h-5 text-neutral-400 transition-transform duration-300 ${
+                                  isExpanded ? 'rotate-180 text-purple-600' : ''
+                                }`}
+                              />
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            <ChevronDown 
-                              className={`w-5 h-5 text-neutral-400 transition-transform duration-300 ${
-                                isExpanded ? 'rotate-180 text-purple-600' : ''
-                              }`}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Accordion Body */}
-                        {isExpanded && (
-                          <div className="p-5 sm:p-6 border-t border-purple-100 bg-purple-50/30 space-y-4">
-                            
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs font-black uppercase text-purple-900 tracking-wider font-[var(--font-rounded,sans-serif)]">
-                                Evaluasi Belajar Pertemuan #{report.meeting_number}
-                              </span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleCopyText(report.teachersNote, report.id)
-                                }}
-                                className="inline-flex items-center gap-1 text-xs font-bold text-purple-700 hover:text-purple-900 cursor-pointer bg-white px-2.5 py-1 rounded-full border border-purple-200"
-                              >
-                                {copiedReportId === report.id ? (
-                                  <>
-                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span className="text-emerald-600">Disalin</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-3.5 h-3.5" />
-                                    <span>Salin</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-
-                            {/* Evaluation Note in comfortable font */}
-                            <div className="bg-white border border-purple-100 p-4 sm:p-5 rounded-2xl text-neutral-800 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-medium shadow-2xs">
-                              {report.teachersNote}
-                            </div>
-
-                            {/* Photo if exists */}
-                            {report.image_url && (
-                              <div className="pt-2">
+                          {/* Accordion Body */}
+                          {isExpanded && (
+                            <div className="p-4 sm:p-6 border-t border-purple-100 bg-purple-50/30 space-y-4">
+                              
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-black uppercase text-purple-900 tracking-wider font-[var(--font-rounded,sans-serif)]">
+                                  Evaluasi Belajar Pertemuan #{report.meeting_number}
+                                </span>
                                 <button
-                                  onClick={() => setPhotoPreview(report.image_url)}
-                                  className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 cursor-pointer bg-white px-3 py-1.5 rounded-full border border-purple-200 shadow-2xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleCopyText(report.teachersNote, report.id)
+                                  }}
+                                  className="inline-flex items-center gap-1 text-xs font-bold text-purple-700 hover:text-purple-900 cursor-pointer bg-white px-2.5 py-1 rounded-full border border-purple-200"
                                 >
-                                  <Maximize2 className="w-3.5 h-3.5" />
-                                  <span>Lihat Foto Pertemuan #{report.meeting_number}</span>
+                                  {copiedReportId === report.id ? (
+                                    <>
+                                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                      <span className="text-emerald-600">Disalin</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-3.5 h-3.5" />
+                                      <span>Salin</span>
+                                    </>
+                                  )}
                                 </button>
                               </div>
-                            )}
 
-                          </div>
-                        )}
+                              {/* Evaluation Note in comfortable font */}
+                              <div className="bg-white border border-purple-100 p-4 sm:p-5 rounded-2xl text-neutral-800 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-medium shadow-2xs">
+                                {report.teachersNote}
+                              </div>
 
-                      </div>
-                    )
-                  })}
-                </div>
+                              {/* Photo if exists */}
+                              {report.image_url && (
+                                <div className="pt-2">
+                                  <button
+                                    onClick={() => setPhotoPreview(report.image_url)}
+                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 cursor-pointer bg-white px-3 py-1.5 rounded-full border border-purple-200 shadow-2xs"
+                                  >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                    <span>Lihat Foto Pertemuan #{report.meeting_number}</span>
+                                  </button>
+                                </div>
+                              )}
+
+                            </div>
+                          )}
+
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-purple-50/60 border-2 border-dashed border-purple-200 rounded-3xl p-8 text-center text-purple-400 text-sm font-bold">
+                    Belum ada riwayat pertemuan.
+                  </div>
+                )}
               </section>
             )}
 
@@ -728,57 +764,55 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
               </div>
             </div>
 
-            {/* PARENT FEEDBACK FORM */}
+            {/* PARENT FEEDBACK FORM (Simple & Compact, No Scrollbars) */}
             <div className="pt-2 border-t-2 border-neutral-100 print:hidden">
-              <div className="bg-purple-50/60 border-2 border-purple-200/80 rounded-3xl p-6 space-y-4">
-                <div className="space-y-1">
-                  <h4 className="text-base font-black text-purple-950 flex items-center gap-2 font-[var(--font-rounded,sans-serif)]">
-                    <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-                    Ada Masukan atau Pertanyaan untuk Guru?
+              <div className="bg-purple-50/70 border-2 border-purple-200/80 rounded-2xl p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-xs sm:text-sm font-black text-purple-950 flex items-center gap-1.5 font-[var(--font-rounded,sans-serif)]">
+                    <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 shrink-0" />
+                    <span>Ada Masukan untuk Guru?</span>
                   </h4>
-                  <p className="text-xs sm:text-sm text-neutral-600">
-                    Pesan atau apresiasi dari Anda akan langsung diteruskan kepada pengajar pembimbing {student.name}.
-                  </p>
+                  <span className="text-[11px] text-neutral-500 hidden sm:inline font-medium">
+                    Terkirim langsung ke guru pembimbing
+                  </span>
                 </div>
 
                 {feedbackStatus === 'success' ? (
-                  <div className="p-4 bg-emerald-100 text-emerald-900 text-xs sm:text-sm font-bold rounded-2xl flex items-center gap-2 border border-emerald-300">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
-                    Terima kasih banyak! Masukan Anda telah berhasil dikirimkan ke guru pembimbing.
+                  <div className="p-3 bg-emerald-100 text-emerald-900 text-xs font-bold rounded-xl flex items-center gap-2 border border-emerald-300">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
+                    <span>Terima kasih banyak! Pesan Anda telah terkirim.</span>
                   </div>
                 ) : (
-                  <form onSubmit={handleSendFeedback} className="space-y-3">
-                    <div className="relative">
-                      <textarea
-                        value={feedbackText}
-                        onChange={(e) => setFeedbackText(e.target.value)}
-                        placeholder={`Tulis pesan, apresiasi, atau pertanyaan untuk guru ${student.name}...`}
-                        rows={2}
-                        required
-                        className="w-full bg-white text-sm sm:text-base text-neutral-800 placeholder-neutral-400 p-4 pr-16 rounded-2xl border-2 border-purple-200 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all resize-none font-medium"
-                      />
-                      <button
-                        type="submit"
-                        disabled={sendingFeedback || !feedbackText.trim()}
-                        className="absolute right-2.5 bottom-3.5 px-3.5 py-2 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-black shadow-sm flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-[var(--font-rounded,sans-serif)]"
-                      >
-                        {sendingFeedback ? (
-                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            <span>Kirim</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {feedbackStatus === 'error' && (
-                      <p className="text-xs font-bold text-rose-600">
-                        Gagal mengirimkan pesan. Silakan coba lagi beberapa saat lagi.
-                      </p>
-                    )}
+                  <form onSubmit={handleSendFeedback} className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={feedbackText}
+                      onChange={(e) => setFeedbackText(e.target.value)}
+                      placeholder="Tulis pesan untuk guru..."
+                      required
+                      className="w-full bg-white text-xs sm:text-sm text-neutral-800 placeholder-neutral-400 py-2.5 pl-3.5 pr-20 rounded-xl border-2 border-purple-200 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all font-medium"
+                    />
+                    <button
+                      type="submit"
+                      disabled={sendingFeedback || !feedbackText.trim()}
+                      className="absolute right-1.5 top-1.5 bottom-1.5 px-3 rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-black shadow-xs flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-[var(--font-rounded,sans-serif)]"
+                    >
+                      {sendingFeedback ? (
+                        <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <span>Kirim</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </>
+                      )}
+                    </button>
                   </form>
+                )}
+
+                {feedbackStatus === 'error' && (
+                  <p className="text-[11px] font-bold text-rose-600">
+                    Gagal mengirimkan pesan. Silakan coba lagi.
+                  </p>
                 )}
               </div>
             </div>
