@@ -29,9 +29,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-black font-sans select-none overflow-x-hidden">
+      <body 
+        suppressHydrationWarning
+        className="min-h-full flex flex-col bg-white text-black font-sans select-none overflow-x-hidden"
+      >
         <LocaleProvider>
           <ThemeProvider>
             <ConfirmProvider>

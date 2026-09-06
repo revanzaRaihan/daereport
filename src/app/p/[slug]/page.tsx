@@ -1,12 +1,18 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
-import { Plus_Jakarta_Sans } from 'next/font/google'
+import { Plus_Jakarta_Sans, Fredoka } from 'next/font/google'
 import { createClient } from '@/utils/supabase/server'
 import ParentDashboard, { ParsedReport } from './ParentDashboard'
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-sans',
+})
+
+const fredoka = Fredoka({
+  subsets: ['latin'],
+  variable: '--font-rounded',
+  weight: ['400', '500', '600', '700'],
 })
 
 interface PageProps {
@@ -184,7 +190,7 @@ export default async function ParentPage({ params }: PageProps) {
   }
 
   return (
-    <div className={plusJakartaSans.variable}>
+    <div className={`${plusJakartaSans.variable} ${fredoka.variable} font-sans`}>
       <ParentDashboard student={data.student} reports={data.reports} />
     </div>
   )

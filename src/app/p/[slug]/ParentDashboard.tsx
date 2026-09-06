@@ -5,12 +5,21 @@ import {
   BookOpen, 
   Calendar, 
   ChevronDown, 
-  FileText, 
-  GraduationCap,
+  Sparkles,
   ArrowRight,
   Copy,
   Check,
-  Clock
+  Clock,
+  Printer,
+  Share2,
+  Smile,
+  Heart,
+  Award,
+  Maximize2,
+  X,
+  GraduationCap,
+  History,
+  MessageCircle
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 
@@ -39,12 +48,57 @@ interface ParentDashboardProps {
   reports: ParsedReport[]
 }
 
+const INDONESIAN_MONTHS = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+]
+
+function formatIndonesianDate(dateStr: string): string {
+  if (!dateStr) return ''
+  try {
+    const parts = dateStr.split('T')[0].split('-')
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10)
+      const month = parseInt(parts[1], 10) - 1
+      const day = parseInt(parts[2], 10)
+      if (!isNaN(year) && !isNaN(month) && !isNaN(day) && month >= 0 && month < 12) {
+        return `${day} ${INDONESIAN_MONTHS[month]} ${year}`
+      }
+    }
+    const d = new Date(dateStr)
+    return `${d.getDate()} ${INDONESIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`
+  } catch {
+    return dateStr
+  }
+}
+
+function cleanMateri(materiStr: string): string {
+  if (!materiStr) return 'Materi Reguler'
+  const trimmed = materiStr.trim()
+
+  // Match lesson / meeting / pertemuan followed by number (e.g. "Lesson 5", "Lesson 2 dan Lesson 3", "Meeting 4")
+  const match = trimmed.match(/(?:Finishing\s+)?(?:Lesson|Meeting|Pertemuan|Modul|Bab)\s+\d+(?:\s*(?:dan|&|-|,)\s*(?:(?:Lesson|Meeting|Pertemuan)\s+)?\d+)*/i)
+  if (match) {
+    return match[0].trim()
+  }
+
+  // If there is punctuation after a number, cut off at the number
+  const cutoffMatch = trimmed.match(/^([^,.:;\n]+?\d+)/)
+  if (cutoffMatch) {
+    return cutoffMatch[1].trim()
+  }
+
+  return trimmed.split(/[,.:;\n]/)[0].trim()
+}
+
 export default function ParentDashboard({ student, reports }: ParentDashboardProps) {
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null)
   const [feedbackText, setFeedbackText] = useState('')
   const [sendingFeedback, setSendingFeedback] = useState(false)
   const [feedbackStatus, setFeedbackStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [copiedReportId, setCopiedReportId] = useState<string | null>(null)
+  const [copiedLink, setCopiedLink] = useState(false)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
 
   useEffect(() => {
     document.documentElement.classList.remove('dark')
@@ -55,6 +109,20 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
     navigator.clipboard.writeText(text)
     setCopiedReportId(reportId)
     setTimeout(() => setCopiedReportId(null), 2000)
+  }
+
+  const handleShareLink = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.href)
+      setCopiedLink(true)
+      setTimeout(() => setCopiedLink(false), 2000)
+    }
+  }
+
+  const handlePrint = () => {
+    if (typeof window !== 'undefined') {
+      window.print()
+    }
   }
 
   const handleSendFeedback = async (e: React.FormEvent) => {
@@ -78,7 +146,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
 
       if (supabaseError) throw supabaseError
 
-      // Call Formsubmit email as backup
+      // Backup notification via FormSubmit
       await fetch('https://formsubmit.co/ajax/revanzaraihanrizqullah@gmail.com', {
         method: 'POST',
         headers: {
@@ -103,281 +171,670 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
     }
   }
 
+  // The latest report is always prominently highlighted
   const latestReport = reports[0] || null
-
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr)
-      return date.toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      })
-    } catch {
-      return dateStr
-    }
-  }
+  // Past reports are the rest of the history
+  const pastReports = reports.slice(1)
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans antialiased text-black">
-      <div className="flex-grow py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mx-auto space-y-10">
-        
-        {/* Student Profile Identity Section (No watermark header, simple and clean profile) */}
-        <div className="space-y-4 text-center pb-6 border-b border-neutral-100">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#10AF13]/10 text-[#10AF13] border border-[#10AF13]/25 mb-2">
-            <GraduationCap className="w-8 h-8" />
-          </div>
-          
-          <div className="space-y-1.5">
-            <h1 className="text-3xl font-black tracking-tight text-neutral-900 font-editorial-headline">
-              {student.name}
-            </h1>
-            <p className="text-sm font-semibold text-neutral-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
-              <BookOpen className="w-4 h-4 text-[#10AF13]" />
-              {student.subject}
-            </p>
+    <div className="min-h-screen bg-[#7C3AED] relative overflow-x-hidden font-sans text-neutral-800 antialiased selection:bg-[#FACC15] selection:text-neutral-900 pb-20 pt-4 sm:pt-8 print:bg-white print:p-0 print:text-black">
+      
+      {/* Playful Background Doodles & Geometric Shapes */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden print:hidden">
+        <div className="absolute -top-12 -left-12 w-48 h-48 rounded-full border-[28px] border-amber-300/30 opacity-70" />
+        <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-rose-400/20 blur-xl" />
+        <div className="absolute top-1/4 -right-8 w-32 h-32 rounded-full border-[18px] border-cyan-300/30 opacity-80" />
+        <div className="absolute top-1/2 -left-10 w-40 h-40 rounded-full border-[22px] border-yellow-300/35" />
+        <div className="absolute top-16 left-8 text-amber-200 text-3xl font-black select-none opacity-60">✕</div>
+        <div className="absolute top-48 right-12 text-pink-200 text-4xl font-black select-none opacity-60">✦</div>
+        <div className="absolute top-2/3 right-6 text-cyan-200 text-2xl font-black select-none opacity-60">✕</div>
+        <div className="absolute bottom-24 left-10 text-yellow-200 text-4xl font-black select-none opacity-60">✦</div>
+      </div>
+
+      <div className="max-w-3xl mx-auto px-3 sm:px-6 relative z-10 print:max-w-none print:px-0">
+
+        {/* Top Control Bar (Share & Print) */}
+        <div className="flex justify-between items-center mb-4 px-2 print:hidden">
+          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3.5 py-1.5 rounded-full text-white text-xs font-bold tracking-wide shadow-sm border border-white/20">
+            <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
+            <span>Portal Laporan Belajar Siswa</span>
           </div>
 
-          <div className="flex justify-center">
-            <span className="inline-flex items-center px-4 py-1.5 bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs font-bold rounded-2xl uppercase tracking-wider">
-              {reports.length} Pertemuan Selesai
-            </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleShareLink}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-purple-900 hover:bg-purple-50 text-xs font-bold rounded-full shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              title="Salin Tautan Halaman"
+            >
+              {copiedLink ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-600">Disalin!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Bagikan</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={handlePrint}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-yellow-300 hover:bg-yellow-400 text-purple-950 text-xs font-extrabold rounded-full shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              title="Cetak atau Simpan PDF"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Cetak / PDF</span>
+            </button>
           </div>
         </div>
 
-        {/* Latest Report Highlight */}
-        {latestReport ? (
-          <div className="space-y-4">
-            <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-              <Clock className="w-4 h-4 text-[#10AF13]" />
-              Laporan Terbaru
-            </h2>
-
-            <div className="bg-white border border-neutral-200 rounded-3xl p-6 space-y-6 shadow-sm transition-all duration-350 hover:border-[#10AF13]/30">
+        {/* MAIN REPORT CARD WORKSHEET */}
+        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl shadow-purple-950/25 border-4 sm:border-[6px] border-white overflow-hidden transition-all print:border-0 print:shadow-none print:rounded-none">
+          
+          {/* PLAYFUL HEADER BANNER (From reference image) */}
+          <div className="relative bg-gradient-to-r from-[#1877F2] via-[#2563EB] to-[#4F46E5] text-white pt-8 pb-9 px-6 sm:px-10 overflow-hidden select-none">
+            
+            {/* Vector Shapes */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="absolute -top-10 -left-10 w-36 h-48 bg-[#FF4757] rounded-full transform -rotate-12 opacity-95" />
+              <div className="absolute -top-8 left-20 w-32 h-32 rounded-full border-[18px] border-[#0984E3] opacity-90" />
               
-              {/* Meeting Meta Header */}
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <span className="bg-[#10AF13] text-white px-3 py-1 rounded-xl text-xs font-extrabold">
-                    Pertemuan {latestReport.meeting_number}
-                  </span>
-                  <span className="text-xs text-neutral-400 font-semibold flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {formatDate(latestReport.report_date)}
-                  </span>
-                </div>
+              <div className="absolute top-20 left-2 w-14 h-14">
+                <svg viewBox="0 0 100 100" className="w-full h-full fill-[#2ED573] drop-shadow-sm">
+                  <path d="M50 0 C60 25 75 25 100 50 C75 75 75 60 50 100 C25 75 40 75 0 50 C25 25 25 40 50 0 Z" />
+                  <circle cx="50" cy="50" r="14" fill="#FFA502" />
+                </svg>
               </div>
 
-              {/* Evaluasi Belajar Only */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-[#10AF13] uppercase tracking-widest block">
-                    Evaluasi Belajar
-                  </span>
-                  <button
-                    onClick={() => handleCopyText(latestReport.teachersNote, latestReport.id)}
-                    className="flex items-center gap-1 text-[10px] font-semibold text-neutral-400 hover:text-[#10AF13] transition-colors cursor-pointer"
-                  >
-                    {copiedReportId === latestReport.id ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-[#10AF13]" />
-                        <span className="text-[#10AF13]">Disalin</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Salin</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-                <p className="text-neutral-800 text-sm leading-relaxed bg-neutral-50 border border-neutral-100 p-5 rounded-2xl whitespace-pre-wrap">
-                  {latestReport.teachersNote}
+              <span className="absolute top-6 left-32 text-pink-400 text-2xl font-black">✕</span>
+              <div className="absolute top-12 left-52 flex gap-1">
+                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
+                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
+                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
+                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
+              </div>
+
+              <svg className="absolute bottom-3 left-48 w-24 h-6 text-white/70 stroke-current fill-none stroke-[3] stroke-linecap-round" viewBox="0 0 100 20">
+                <path d="M0 10 Q 12 0 25 10 T 50 10 T 75 10 T 100 10" />
+              </svg>
+
+              <div className="absolute -top-6 -right-6 w-44 h-44 bg-[#FFA502] rounded-full opacity-95" />
+              
+              <div className="absolute top-14 right-32 w-14 h-14">
+                <svg viewBox="0 0 100 100" className="w-full h-full fill-[#FF6B81]">
+                  <circle cx="50" cy="20" r="18" />
+                  <circle cx="80" cy="50" r="18" />
+                  <circle cx="50" cy="80" r="18" />
+                  <circle cx="20" cy="50" r="18" />
+                  <circle cx="50" cy="50" r="16" fill="#FEEAA7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Header Content: Title & Mascots */}
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight font-[var(--font-rounded,sans-serif)] drop-shadow-sm text-white">
+                  Class Report
+                </h1>
+                <p className="text-white/90 text-xs sm:text-sm font-semibold tracking-wide">
+                  Laporan Evaluasi & Progres Belajar Siswa
                 </p>
               </div>
 
-              {/* Documentation image if exists */}
-              {latestReport.image_url && (
-                <div className="space-y-2">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block">
-                    Dokumentasi Kelas
-                  </span>
-                  <div className="rounded-2xl overflow-hidden border border-neutral-100 aspect-video">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={latestReport.image_url} 
-                      alt="Dokumentasi Kelas" 
-                      className="w-full h-full object-cover filter contrast-105 hover:contrast-100 transition-all duration-550"
-                    />
-                  </div>
+              {/* MASCOTS (Puppy & Kitten) */}
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                {/* Puppy Mascot */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 relative transform -rotate-3 hover:scale-105 transition-transform duration-300 filter drop-shadow-md">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <ellipse cx="50" cy="50" rx="38" ry="34" fill="#FFFFFF" stroke="#333333" strokeWidth="3" />
+                    <path d="M18 30 C5 35 8 60 22 55 C22 45 20 35 18 30 Z" fill="#FFFFFF" stroke="#333333" strokeWidth="3" />
+                    <path d="M12 40 C14 46 16 50 18 52" stroke="#666" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M10 44 C12 48 14 52 16 54" stroke="#666" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M82 30 C95 35 92 60 78 55 C78 45 80 35 82 30 Z" fill="#FFFFFF" stroke="#333333" strokeWidth="3" />
+                    <path d="M88 40 C86 46 84 50 82 52" stroke="#666" strokeWidth="2" strokeLinecap="round" />
+                    <ellipse cx="38" cy="45" rx="3.5" ry="5" fill="#333333" />
+                    <circle cx="39" cy="43" r="1.5" fill="#FFFFFF" />
+                    <ellipse cx="62" cy="45" rx="3.5" ry="5" fill="#333333" />
+                    <circle cx="63" cy="43" r="1.5" fill="#FFFFFF" />
+                    <path d="M34 37 Q 38 34 42 37" stroke="#333" strokeWidth="2" strokeLinecap="round" fill="none" />
+                    <path d="M58 37 Q 62 34 66 37" stroke="#333" strokeWidth="2" strokeLinecap="round" fill="none" />
+                    <path d="M46 52 Q 50 50 54 52 Q 50 57 46 52 Z" fill="#333333" />
+                    <path d="M50 55 Q 46 62 42 60" stroke="#333" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                    <path d="M50 55 Q 54 62 58 60" stroke="#333" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                    <path d="M48 59 C48 68 56 68 56 59 Z" fill="#FF4757" />
+                    <ellipse cx="28" cy="54" rx="5" ry="3" fill="#FFB8B8" opacity="0.8" />
+                    <ellipse cx="72" cy="54" rx="5" ry="3" fill="#FFB8B8" opacity="0.8" />
+                  </svg>
                 </div>
-              )}
+
+                {/* Kitten Mascot */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 relative transform rotate-6 hover:scale-105 transition-transform duration-300 filter drop-shadow-md -ml-3">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <polygon points="20,40 32,15 45,35" fill="#FF793F" stroke="#333333" strokeWidth="3" />
+                    <polygon points="25,35 32,22 40,33" fill="#FFFFFF" />
+                    <polygon points="80,40 68,15 55,35" fill="#FF793F" stroke="#333333" strokeWidth="3" />
+                    <polygon points="75,35 68,22 60,33" fill="#FFFFFF" />
+                    <ellipse cx="50" cy="55" rx="36" ry="32" fill="#FF793F" stroke="#333333" strokeWidth="3" />
+                    <path d="M30 65 Q 50 50 70 65 Q 50 85 30 65 Z" fill="#FFFFFF" />
+                    <line x1="12" y1="56" x2="28" y2="58" stroke="#333" strokeWidth="2.5" strokeLinecap="round" />
+                    <line x1="10" y1="64" x2="26" y2="63" stroke="#333" strokeWidth="2.5" strokeLinecap="round" />
+                    <line x1="88" y1="56" x2="72" y2="58" stroke="#333" strokeWidth="2.5" strokeLinecap="round" />
+                    <line x1="90" y1="64" x2="74" y2="63" stroke="#333" strokeWidth="2.5" strokeLinecap="round" />
+                    <path d="M33 50 Q 38 43 43 50" stroke="#333" strokeWidth="3" strokeLinecap="round" fill="none" />
+                    <path d="M57 50 Q 62 43 67 50" stroke="#333" strokeWidth="3" strokeLinecap="round" fill="none" />
+                    <polygon points="47,60 53,60 50,64" fill="#333333" />
+                    <path d="M50 64 Q 45 70 42 68" stroke="#333" strokeWidth="2" strokeLinecap="round" fill="none" />
+                    <path d="M50 64 Q 55 70 58 68" stroke="#333" strokeWidth="2" strokeLinecap="round" fill="none" />
+                    <circle cx="28" cy="57" r="4" fill="#FFB8B8" />
+                    <circle cx="72" cy="57" r="4" fill="#FFB8B8" />
+                  </svg>
+                </div>
+              </div>
+
             </div>
           </div>
-        ) : (
-          <div className="bg-white border border-neutral-100 rounded-3xl p-8 text-center text-neutral-400 text-xs">
-            Belum ada laporan pertemuan yang tersimpan.
-          </div>
-        )}
 
-        {/* Timeline of past reports */}
-        {reports.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#10AF13]" />
-              Timeline Riwayat Kelas
-            </h2>
+          {/* MAIN WORKSHEET BODY */}
+          <div className="p-6 sm:p-8 space-y-8 bg-white">
+            
+            {/* STUDENT IDENTITY SECTION: 4 Pill Badges */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+              
+              {/* Student Name */}
+              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-full px-5 py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300">
+                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 font-[var(--font-rounded,sans-serif)]">
+                  Student Name:
+                </span>
+                <span className="text-base sm:text-lg font-black text-neutral-900 truncate pl-3 font-[var(--font-rounded,sans-serif)]">
+                  {student.name}
+                </span>
+              </div>
 
-            <div className="border border-neutral-200 rounded-3xl bg-white overflow-hidden divide-y divide-neutral-200 shadow-sm">
-              {reports.map((report) => {
-                const isExpanded = expandedReportId === report.id
-                return (
-                  <div key={report.id} className="transition-all">
-                    
-                    {/* Accordion Trigger */}
-                    <div 
-                      onClick={() => setExpandedReportId(isExpanded ? null : report.id)}
-                      className="flex items-center justify-between p-5 cursor-pointer hover:bg-neutral-50/50 select-none"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={`px-2.5 py-1 rounded-xl text-xs font-extrabold transition-colors duration-300 ${
-                          isExpanded ? 'bg-[#10AF13] text-white' : 'bg-neutral-100 text-neutral-600'
-                        }`}>
-                          Pertemuan {report.meeting_number}
-                        </span>
-                        <span className="text-xs text-neutral-400 font-semibold flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {formatDate(report.report_date)}
-                        </span>
-                      </div>
-                      <ChevronDown 
-                        className={`w-5 h-5 text-neutral-400 transition-transform duration-300 ${
-                          isExpanded ? 'rotate-180 text-[#10AF13]' : ''
-                        }`}
-                      />
+              {/* Subject / Level */}
+              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-full px-5 py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300">
+                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 font-[var(--font-rounded,sans-serif)]">
+                  Level & Subject:
+                </span>
+                <span className="text-xs sm:text-sm font-extrabold text-neutral-800 truncate pl-3 flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                  {student.subject}
+                </span>
+              </div>
+
+              {/* Total Meetings */}
+              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-full px-5 py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300">
+                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 font-[var(--font-rounded,sans-serif)]">
+                  Total Pertemuan:
+                </span>
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-black rounded-full">
+                  <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
+                  {reports.length} Sesi Selesai
+                </span>
+              </div>
+
+              {/* Latest Meeting Date */}
+              <div className="bg-[#F8F9FA] border-2 border-neutral-200/80 rounded-full px-5 py-2.5 flex items-center justify-between shadow-xs transition-colors hover:border-purple-300">
+                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-purple-900 shrink-0 font-[var(--font-rounded,sans-serif)]">
+                  Tanggal Terkini:
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-neutral-700 flex items-center gap-1.5 pl-3">
+                  <Calendar className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                  {latestReport ? formatIndonesianDate(latestReport.report_date) : 'Belum ada data'}
+                </span>
+              </div>
+
+            </div>
+
+            {/* FEATURED: LAPORAN PERTEMUAN TERBARU (With large, comfortable reading font for parents) */}
+            {latestReport ? (
+              <section className="space-y-4">
+                
+                {/* Section Header */}
+                <div className="flex items-center justify-between pb-1 border-b-2 border-purple-100">
+                  <div className="flex items-center gap-2">
+                    <span className="flex gap-1">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-purple-600" />
+                    </span>
+                    <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-purple-950 font-[var(--font-rounded,sans-serif)]">
+                      Laporan Pertemuan Terbaru
+                    </h2>
+                  </div>
+
+                  <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-black rounded-full font-[var(--font-rounded,sans-serif)]">
+                    Sesi Terkini
+                  </span>
+                </div>
+
+                {/* Latest Report Card */}
+                <div className="bg-gradient-to-b from-[#FAF5FF] to-white border-2 border-purple-200 rounded-[2rem] p-6 sm:p-8 space-y-6 shadow-md relative overflow-hidden">
+                  
+                  {/* Watermark badge */}
+                  <div className="absolute top-4 right-6 text-purple-200/50 font-black text-6xl select-none pointer-events-none font-[var(--font-rounded,sans-serif)]">
+                    #{latestReport.meeting_number}
+                  </div>
+
+                  {/* Meeting Meta Header */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 relative z-10">
+                    <div className="flex items-center gap-2.5">
+                      <span className="px-4 py-1.5 bg-[#7C3AED] text-white text-xs sm:text-sm font-black rounded-full shadow-xs uppercase tracking-wider font-[var(--font-rounded,sans-serif)]">
+                        Pertemuan Ke-{latestReport.meeting_number}
+                      </span>
+                      <span className="text-xs sm:text-sm font-bold text-neutral-600 flex items-center gap-1.5 bg-white/80 px-3 py-1 rounded-full border border-purple-100">
+                        <Calendar className="w-4 h-4 text-purple-600" />
+                        {formatIndonesianDate(latestReport.report_date)}
+                      </span>
                     </div>
 
-                    {/* Accordion Body */}
-                    {isExpanded && (
-                      <div className="p-5 border-t border-neutral-100 bg-neutral-50/30 space-y-4">
-                        
-                        {/* Evaluasi Belajar Only */}
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[9px] font-bold text-[#10AF13] uppercase tracking-widest block">
-                              Evaluasi Belajar
-                            </span>
-                            <button
-                              onClick={() => handleCopyText(report.teachersNote, report.id)}
-                              className="flex items-center gap-1 text-[9px] font-semibold text-neutral-400 hover:text-[#10AF13] transition-colors cursor-pointer"
-                            >
-                              {copiedReportId === report.id ? (
-                                <>
-                                  <Check className="w-3 h-3 text-[#10AF13]" />
-                                  <span className="text-[#10AF13]">Disalin</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3 h-3" />
-                                  <span>Salin</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <p className="text-neutral-800 text-xs leading-relaxed bg-white border border-neutral-200 p-4 rounded-xl whitespace-pre-wrap">
-                            {report.teachersNote}
-                          </p>
-                        </div>
+                    <button
+                      onClick={() => handleCopyText(latestReport.teachersNote, latestReport.id)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-purple-50 text-purple-800 border-2 border-purple-200 rounded-full text-xs font-bold shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      {copiedReportId === latestReport.id ? (
+                        <>
+                          <Check className="w-4 h-4 text-emerald-600" />
+                          <span className="text-emerald-600 font-extrabold">Disalin</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 text-purple-600" />
+                          <span>Salin Catatan</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
 
-                        {/* Documentation image if exists */}
-                        {report.image_url && (
-                          <div className="space-y-1.5">
-                            <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block">
-                              Dokumentasi Kelas
+                  {/* Materi Pembelajaran */}
+                  <div className="space-y-2 relative z-10">
+                    <div className="flex items-center gap-2 text-xs font-black text-purple-900 uppercase tracking-wider font-[var(--font-rounded,sans-serif)]">
+                      <BookOpen className="w-4 h-4 text-[#7C3AED]" />
+                      <span>Materi yang Dipelajari:</span>
+                    </div>
+                    <div className="bg-white border-2 border-purple-100 rounded-2xl px-5 py-4 shadow-xs flex items-center justify-between">
+                      <span className="text-base sm:text-lg font-black text-neutral-900 font-[var(--font-rounded,sans-serif)]">
+                        {cleanMateri(latestReport.materi || latestReport.lessonCompleted)}
+                      </span>
+                      <span className="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-black rounded-full border border-purple-100 font-[var(--font-rounded,sans-serif)]">
+                        Selesai
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Evaluasi Belajar Guru (Large, readable font specifically tailored for parents) */}
+                  <div className="space-y-2.5 relative z-10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="w-5 h-5 text-purple-600" />
+                        <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-neutral-900 font-[var(--font-rounded,sans-serif)]">
+                          Evaluasi Belajar Siswa:
+                        </h3>
+                      </div>
+                      <span className="text-xs font-extrabold text-purple-700 bg-purple-100/70 px-3 py-0.5 rounded-full">
+                        Catatan Guru
+                      </span>
+                    </div>
+
+                    {/* LARGE FONT NOTE CONTAINER FOR EASY READING */}
+                    <div className="bg-white border-2 border-purple-200/90 rounded-2xl p-5 sm:p-7 shadow-xs">
+                      <div className="text-neutral-900 text-base sm:text-lg lg:text-[18.5px] leading-[1.8] sm:leading-[1.9] font-medium whitespace-pre-wrap tracking-normal">
+                        {latestReport.teachersNote}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Rekomendasi Latihan (if available) */}
+                  {latestReport.trainingRecommendation && latestReport.trainingRecommendation !== 'Tidak ada rekomendasi khusus.' && (
+                    <div className="space-y-2 relative z-10">
+                      <div className="flex items-center gap-2 text-xs font-black text-amber-900 uppercase tracking-wider font-[var(--font-rounded,sans-serif)]">
+                        <Award className="w-4 h-4 text-amber-600" />
+                        <span>Rekomendasi Latihan di Rumah:</span>
+                      </div>
+                      <div className="bg-amber-50/90 border-2 border-amber-200 rounded-2xl p-4 sm:p-5 text-amber-950 text-sm sm:text-base font-medium leading-relaxed shadow-xs">
+                        {latestReport.trainingRecommendation}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dokumentasi Foto Kelas */}
+                  {latestReport.image_url && (
+                    <div className="space-y-2.5 relative z-10">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black uppercase tracking-wider text-neutral-800 font-[var(--font-rounded,sans-serif)]">
+                          Dokumentasi Pembelajaran:
+                        </span>
+                        <span className="text-xs font-bold text-neutral-400">
+                          Klik foto untuk memperbesar
+                        </span>
+                      </div>
+
+                      <div 
+                        onClick={() => setPhotoPreview(latestReport.image_url)}
+                        className="rounded-2xl overflow-hidden border-4 border-white shadow-md bg-neutral-100 aspect-video relative group cursor-pointer"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img 
+                          src={latestReport.image_url} 
+                          alt="Dokumentasi Kelas" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-purple-950/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="bg-white/95 text-purple-950 px-4 py-2 rounded-full text-xs font-black shadow-md flex items-center gap-1.5">
+                            <Maximize2 className="w-3.5 h-3.5" />
+                            Buka Foto Penuh
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              </section>
+            ) : (
+              <div className="bg-purple-50/60 border-2 border-dashed border-purple-200 rounded-3xl p-8 text-center text-purple-400 text-sm font-bold">
+                Belum ada laporan pertemuan yang tersimpan untuk murid ini.
+              </div>
+            )}
+
+            {/* RIWAYAT PERTEMUAN SEBELUMNYA (History of past meetings) */}
+            {pastReports.length > 0 && (
+              <section className="space-y-4 pt-4 border-t-2 border-neutral-100">
+                <div className="flex items-center justify-between pb-1">
+                  <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-purple-950 flex items-center gap-2 font-[var(--font-rounded,sans-serif)]">
+                    <History className="w-4 h-4 text-purple-600" />
+                    Riwayat Pertemuan Sebelumnya ({pastReports.length})
+                  </h3>
+                  <span className="text-xs font-bold text-neutral-400">
+                    Klik untuk melihat evaluasi
+                  </span>
+                </div>
+
+                <div className="border-2 border-neutral-200/90 rounded-3xl bg-white overflow-hidden divide-y divide-neutral-100 shadow-xs">
+                  {pastReports.map((report) => {
+                    const isExpanded = expandedReportId === report.id
+
+                    return (
+                      <div key={`history-${report.id}`} className="transition-all">
+                        
+                        {/* Accordion Trigger */}
+                        <div 
+                          onClick={() => setExpandedReportId(isExpanded ? null : report.id)}
+                          className="flex items-center justify-between p-4 sm:p-5 cursor-pointer hover:bg-purple-50/50 select-none transition-colors"
+                        >
+                          <div className="flex items-center gap-3 sm:gap-4">
+                            <span className="px-3.5 py-1 bg-neutral-100 text-neutral-700 rounded-full text-xs font-black font-[var(--font-rounded,sans-serif)] shrink-0">
+                              Pertemuan #{report.meeting_number}
                             </span>
-                            <div className="rounded-xl overflow-hidden border border-neutral-200 aspect-video max-w-sm">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img 
-                                src={report.image_url} 
-                                alt="Dokumentasi Kelas" 
-                                className="w-full h-full object-cover filter contrast-105 hover:contrast-100 transition-all duration-550"
-                              />
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-3">
+                              <span className="text-xs sm:text-sm font-bold text-neutral-800 line-clamp-1">
+                                {cleanMateri(report.materi || report.lessonCompleted)}
+                              </span>
+                              <span className="text-xs text-neutral-400 font-semibold flex items-center gap-1">
+                                <Calendar className="w-3.5 h-3.5" />
+                                {formatIndonesianDate(report.report_date)}
+                              </span>
                             </div>
                           </div>
+
+                          <div className="flex items-center gap-2">
+                            <ChevronDown 
+                              className={`w-5 h-5 text-neutral-400 transition-transform duration-300 ${
+                                isExpanded ? 'rotate-180 text-purple-600' : ''
+                              }`}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Accordion Body */}
+                        {isExpanded && (
+                          <div className="p-5 sm:p-6 border-t border-purple-100 bg-purple-50/30 space-y-4">
+                            
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-black uppercase text-purple-900 tracking-wider font-[var(--font-rounded,sans-serif)]">
+                                Evaluasi Belajar Pertemuan #{report.meeting_number}
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleCopyText(report.teachersNote, report.id)
+                                }}
+                                className="inline-flex items-center gap-1 text-xs font-bold text-purple-700 hover:text-purple-900 cursor-pointer bg-white px-2.5 py-1 rounded-full border border-purple-200"
+                              >
+                                {copiedReportId === report.id ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span className="text-emerald-600">Disalin</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3.5 h-3.5" />
+                                    <span>Salin</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Evaluation Note in comfortable font */}
+                            <div className="bg-white border border-purple-100 p-4 sm:p-5 rounded-2xl text-neutral-800 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-medium shadow-2xs">
+                              {report.teachersNote}
+                            </div>
+
+                            {/* Photo if exists */}
+                            {report.image_url && (
+                              <div className="pt-2">
+                                <button
+                                  onClick={() => setPhotoPreview(report.image_url)}
+                                  className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 cursor-pointer bg-white px-3 py-1.5 rounded-full border border-purple-200 shadow-2xs"
+                                >
+                                  <Maximize2 className="w-3.5 h-3.5" />
+                                  <span>Lihat Foto Pertemuan #{report.meeting_number}</span>
+                                </button>
+                              </div>
+                            )}
+
+                          </div>
                         )}
+
                       </div>
-                    )}
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* BOTTOM SECTION: STATIONERY ILLUSTRATIONS (Matching book, palette, ruler from reference image) */}
+            <div className="relative pt-4 overflow-hidden select-none">
+              
+              {/* Sunshine Yellow & Pastel Background Ribbon */}
+              <div className="bg-gradient-to-r from-amber-300 via-amber-200 to-yellow-200 rounded-3xl p-6 sm:p-8 relative overflow-hidden border-2 border-amber-300/60 shadow-xs">
+                
+                <svg className="absolute top-2 left-1/4 w-32 h-6 text-amber-500/30 stroke-current fill-none stroke-[3]" viewBox="0 0 100 20">
+                  <path d="M0 10 Q 12 0 25 10 T 50 10 T 75 10 T 100 10" />
+                </svg>
+
+                <span className="absolute top-4 right-1/3 text-amber-600/40 text-xl font-black">✕</span>
+                <div className="absolute bottom-3 left-4 flex gap-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-500/40" />
+                  <span className="w-2 h-2 rounded-full bg-amber-500/40" />
+                  <span className="w-2 h-2 rounded-full bg-amber-500/40" />
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
+                  
+                  {/* Grade / Learning System Mini Card */}
+                  <div className="w-full sm:max-w-xs bg-white/95 rounded-2xl p-4 shadow-sm border border-amber-300/80 space-y-2">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#5B21B6] text-white text-[10px] font-black rounded-full uppercase tracking-wider font-[var(--font-rounded,sans-serif)]">
+                      <Smile className="w-3.5 h-3.5 text-yellow-300" />
+                      <span>Catatan Pembelajaran</span>
+                    </div>
+                    <p className="text-xs text-neutral-700 leading-snug font-medium">
+                      Evaluasi belajar diperbarui setiap pertemuan agar orang tua dapat senantiasa memantau perkembangan dan memberikan dukungan terbaik di rumah.
+                    </p>
                   </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
 
-      </div>
-      </div>
+                  {/* Stationary Illustrations */}
+                  <div className="flex items-center justify-center gap-3 sm:gap-4 shrink-0">
+                    
+                    {/* Emerald Green Book */}
+                    <div className="w-16 h-20 sm:w-20 sm:h-24 relative transform -rotate-12 filter drop-shadow-md">
+                      <svg viewBox="0 0 80 100" className="w-full h-full">
+                        <rect x="12" y="8" width="62" height="88" rx="4" fill="#E2E8F0" />
+                        <rect x="8" y="5" width="60" height="90" rx="5" fill="#10B981" stroke="#047857" strokeWidth="2.5" />
+                        <rect x="8" y="5" width="10" height="90" rx="3" fill="#059669" />
+                        <rect x="25" y="22" width="34" height="24" rx="3" fill="#FDE047" stroke="#CA8A04" strokeWidth="1.5" />
+                      </svg>
+                    </div>
 
-      {/* Full-width Editorial Footer */}
-      <footer className="w-full bg-[#F2F1E8] text-[#1E293B] pt-20 pb-16 px-6 sm:px-12 border-t border-neutral-200/40">
-        <div className="max-w-2xl mx-auto text-center space-y-8">
-          
-          <div className="space-y-3">
-            <h2 className="text-3xl sm:text-4xl font-serif tracking-tight text-neutral-850 leading-tight">
-              Ada masukan untuk guru?
-            </h2>
-            <p className="text-xs sm:text-sm text-neutral-500 font-sans tracking-wide max-w-md mx-auto">
-              Saran atau pesan Anda akan dikirimkan langsung ke guru pembimbing.
-            </p>
-          </div>
+                    {/* Artist Paint Palette */}
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 relative transform rotate-6 filter drop-shadow-md -ml-3">
+                      <svg viewBox="0 0 100 100" className="w-full h-full">
+                        <path 
+                          d="M30 20 C60 10 90 25 90 55 C90 80 65 95 45 90 C25 85 10 75 10 50 C10 30 20 22 30 20 Z" 
+                          fill="#FFFBEB" 
+                          stroke="#D97706" 
+                          strokeWidth="2.5" 
+                        />
+                        <circle cx="70" cy="65" r="7" fill="#FEF3C7" stroke="#D97706" strokeWidth="2" />
+                        <circle cx="30" cy="35" r="5" fill="#EF4444" />
+                        <circle cx="48" cy="28" r="5" fill="#3B82F6" />
+                        <circle cx="68" cy="35" r="5" fill="#10B981" />
+                        <circle cx="32" cy="55" r="5" fill="#F59E0B" />
+                        <circle cx="45" cy="72" r="5" fill="#8B5CF6" />
+                      </svg>
+                    </div>
 
-          {feedbackStatus === 'success' ? (
-            <div className="p-4 bg-emerald-50 text-emerald-800 text-sm font-medium rounded-full inline-flex items-center gap-2 border border-emerald-500/10">
-              <span className="w-2 h-2 rounded-full bg-[#10AF13]" />
-              Terima kasih, masukan Anda telah berhasil terkirim.
-            </div>
-          ) : (
-            <form onSubmit={handleSendFeedback} className="max-w-xl mx-auto">
-              <div className="bg-white rounded-full p-2 pl-6 pr-2 shadow-sm border border-neutral-200/50 flex items-center gap-3 focus-within:border-[#10AF13]/40 focus-within:ring-2 focus-within:ring-[#10AF13]/10 transition-all">
-                <input
-                  type="text"
-                  value={feedbackText}
-                  onChange={(e) => setFeedbackText(e.target.value)}
-                  placeholder="Tulis pesan atau masukan Anda di sini..."
-                  required
-                  className="flex-grow bg-transparent text-sm text-neutral-800 placeholder-neutral-400 focus:outline-none py-2.5 font-sans"
-                />
-                <button
-                  type="submit"
-                  disabled={sendingFeedback || !feedbackText.trim()}
-                  className="w-10 h-10 rounded-full bg-[#10AF13] hover:bg-[#0e9610] text-white flex items-center justify-center shrink-0 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {sendingFeedback ? (
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <ArrowRight className="w-4 h-4" />
-                  )}
-                </button>
+                    {/* Blue Ruler */}
+                    <div className="w-10 h-24 sm:w-12 sm:h-28 relative transform rotate-45 filter drop-shadow-md -ml-4">
+                      <svg viewBox="0 0 35 100" className="w-full h-full">
+                        <rect x="3" y="2" width="28" height="96" rx="4" fill="#3B82F6" stroke="#1D4ED8" strokeWidth="2" />
+                        <line x1="22" y1="15" x2="31" y2="15" stroke="#FFFFFF" strokeWidth="2" />
+                        <line x1="26" y1="25" x2="31" y2="25" stroke="#FFFFFF" strokeWidth="1.5" />
+                        <line x1="22" y1="35" x2="31" y2="35" stroke="#FFFFFF" strokeWidth="2" />
+                        <line x1="26" y1="45" x2="31" y2="45" stroke="#FFFFFF" strokeWidth="1.5" />
+                        <line x1="22" y1="55" x2="31" y2="55" stroke="#FFFFFF" strokeWidth="2" />
+                        <line x1="26" y1="65" x2="31" y2="65" stroke="#FFFFFF" strokeWidth="1.5" />
+                        <line x1="22" y1="75" x2="31" y2="75" stroke="#FFFFFF" strokeWidth="2" />
+                        <line x1="26" y1="85" x2="31" y2="85" stroke="#FFFFFF" strokeWidth="1.5" />
+                      </svg>
+                    </div>
+
+                  </div>
+
+                </div>
+
               </div>
-              {feedbackStatus === 'error' && (
-                <p className="text-[10px] font-semibold text-rose-600 mt-2">Gagal mengirim pesan. Silakan coba lagi nanti.</p>
-              )}
-            </form>
-          )}
-
-          <div className="h-px bg-neutral-300/30 my-8" />
-
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 text-[10px] sm:text-xs font-semibold text-neutral-400 tracking-wider font-sans">
-            <div>
-              &copy; {new Date().getFullYear()} DREPORT STUDIO. ALL RIGHTS RESERVED.
             </div>
-            <div className="uppercase opacity-80">
-              PORTAL ORANG TUA / {student.subject}
+
+            {/* PARENT FEEDBACK FORM */}
+            <div className="pt-2 border-t-2 border-neutral-100 print:hidden">
+              <div className="bg-purple-50/60 border-2 border-purple-200/80 rounded-3xl p-6 space-y-4">
+                <div className="space-y-1">
+                  <h4 className="text-base font-black text-purple-950 flex items-center gap-2 font-[var(--font-rounded,sans-serif)]">
+                    <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                    Ada Masukan atau Pertanyaan untuk Guru?
+                  </h4>
+                  <p className="text-xs sm:text-sm text-neutral-600">
+                    Pesan atau apresiasi dari Anda akan langsung diteruskan kepada pengajar pembimbing {student.name}.
+                  </p>
+                </div>
+
+                {feedbackStatus === 'success' ? (
+                  <div className="p-4 bg-emerald-100 text-emerald-900 text-xs sm:text-sm font-bold rounded-2xl flex items-center gap-2 border border-emerald-300">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
+                    Terima kasih banyak! Masukan Anda telah berhasil dikirimkan ke guru pembimbing.
+                  </div>
+                ) : (
+                  <form onSubmit={handleSendFeedback} className="space-y-3">
+                    <div className="relative">
+                      <textarea
+                        value={feedbackText}
+                        onChange={(e) => setFeedbackText(e.target.value)}
+                        placeholder={`Tulis pesan, apresiasi, atau pertanyaan untuk guru ${student.name}...`}
+                        rows={2}
+                        required
+                        className="w-full bg-white text-sm sm:text-base text-neutral-800 placeholder-neutral-400 p-4 pr-16 rounded-2xl border-2 border-purple-200 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all resize-none font-medium"
+                      />
+                      <button
+                        type="submit"
+                        disabled={sendingFeedback || !feedbackText.trim()}
+                        className="absolute right-2.5 bottom-3.5 px-3.5 py-2 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-black shadow-sm flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-[var(--font-rounded,sans-serif)]"
+                      >
+                        {sendingFeedback ? (
+                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <span>Kirim</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {feedbackStatus === 'error' && (
+                      <p className="text-xs font-bold text-rose-600">
+                        Gagal mengirimkan pesan. Silakan coba lagi beberapa saat lagi.
+                      </p>
+                    )}
+                  </form>
+                )}
+              </div>
             </div>
+
+          </div>
+
+          {/* CARD FOOTER BRANDING */}
+          <div className="bg-[#F8F9FA] px-6 py-4 border-t border-neutral-200/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-bold text-neutral-400">
+            <span className="uppercase tracking-wider font-[var(--font-rounded,sans-serif)]">
+              &copy; 2026 DReport Studio &bull; Portal Orang Tua
+            </span>
+            <span className="text-purple-700 bg-purple-100/70 px-3 py-1 rounded-full">
+              Program: {student.subject}
+            </span>
           </div>
 
         </div>
-      </footer>
+
+      </div>
+
+      {/* PHOTO PREVIEW MODAL */}
+      {photoPreview && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 print:hidden animate-fade-in"
+          onClick={() => setPhotoPreview(null)}
+        >
+          <div className="relative max-w-3xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl p-2 sm:p-3 border-4 border-white">
+            <button
+              onClick={() => setPhotoPreview(null)}
+              className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src={photoPreview} 
+              alt="Dokumentasi Kelas Besar" 
+              className="w-full max-h-[80vh] object-contain rounded-2xl"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* PRINT MEDIA STYLES */}
+      <style jsx global>{`
+        @media print {
+          body {
+            background-color: white !important;
+            padding: 0 !important;
+          }
+          @page {
+            margin: 1.5cm;
+          }
+        }
+      `}</style>
+
     </div>
   )
 }
