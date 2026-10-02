@@ -37,6 +37,14 @@ export async function updateSession(request: NextRequest) {
   const isApiRoute = request.nextUrl.pathname.startsWith('/api')
   const isStaticFile = request.nextUrl.pathname.match(/\.(png|jpg|jpeg|gif|svg|ico)$/)
   const isParentRoute = request.nextUrl.pathname.startsWith('/p/')
+  const authCode = request.nextUrl.searchParams.get('code')
+
+  // Safeguard: jika Supabase melempar ?code=... ke root '/', arahkan langsung ke /auth/callback
+  if (authCode && !isAuthRoute) {
+    const callbackUrl = request.nextUrl.clone()
+    callbackUrl.pathname = '/auth/callback'
+    return NextResponse.redirect(callbackUrl)
+  }
 
   if (!user && !isLoginPage && !isAuthRoute && !isApiRoute && !isStaticFile && !isParentRoute) {
     const url = request.nextUrl.clone()
