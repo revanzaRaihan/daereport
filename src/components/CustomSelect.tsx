@@ -33,19 +33,19 @@ export default function CustomSelect({
   const customStyles: StylesConfig<OptionType, false> = {
     control: (provided, state) => ({
       ...provided,
-      backgroundColor: state.isDisabled ? 'rgba(0, 0, 0, 0.03)' : 'var(--card)',
-      borderColor: state.isFocused ? 'var(--primary)' : 'var(--border-color)',
+      backgroundColor: state.isDisabled ? 'rgba(0, 0, 0, 0.03)' : 'var(--input-bg)',
+      borderColor: state.isFocused ? 'var(--accent)' : 'var(--border-color)',
       borderRadius: '0.75rem', // rounded-xl
-      boxShadow: state.isFocused ? '0 0 0 1px var(--primary)' : 'none',
+      boxShadow: state.isFocused ? '0 0 0 3px rgba(77, 162, 60, 0.18)' : 'none',
       minHeight: '42px',
       fontSize: '0.825rem',
       fontWeight: 600,
       color: state.isDisabled ? 'var(--text-secondary)' : 'var(--text-primary)',
-      transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+      transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
       cursor: state.isDisabled ? 'not-allowed' : 'pointer',
       opacity: state.isDisabled ? 0.6 : 1,
       '&:hover': {
-        borderColor: state.isFocused ? 'var(--primary)' : 'var(--border-color)'
+        borderColor: state.isFocused ? 'var(--accent)' : 'rgba(77, 162, 60, 0.45)'
       }
     }),
     valueContainer: (provided) => ({
@@ -67,7 +67,7 @@ export default function CustomSelect({
       ...provided,
       color: 'var(--text-secondary)',
       '&:hover': {
-        color: 'var(--text-primary)'
+        color: 'var(--accent)'
       }
     }),
     indicatorSeparator: () => ({
@@ -78,7 +78,7 @@ export default function CustomSelect({
       backgroundColor: 'var(--card)',
       borderRadius: '0.75rem',
       border: '1px solid var(--border-color)',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
+      boxShadow: '0 10px 25px -4px rgba(0, 0, 0, 0.08)',
       overflow: 'hidden',
       zIndex: 50,
       animation: 'dropdownReveal 350ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
@@ -87,20 +87,20 @@ export default function CustomSelect({
     option: (provided, state) => ({
       ...provided,
       backgroundColor: state.isSelected 
-      ? 'var(--primary)' 
-      : state.isFocused 
-        ? 'var(--border-color)' 
-        : 'var(--card)',
+        ? 'var(--accent)' 
+        : state.isFocused 
+          ? 'rgba(77, 162, 60, 0.12)' 
+          : 'var(--card)',
       color: state.isSelected 
-      ? 'var(--background)' 
-      : 'var(--text-primary)',
+        ? '#FFFFFF' 
+        : 'var(--text-primary)',
       fontSize: '0.825rem',
       fontWeight: state.isSelected ? 700 : 500,
       padding: '10px 14px',
       cursor: 'pointer',
       '&:active': {
-        backgroundColor: 'var(--primary)',
-        color: 'var(--background)'
+        backgroundColor: 'var(--accent)',
+        color: '#FFFFFF'
       }
     })
   };

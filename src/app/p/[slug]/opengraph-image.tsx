@@ -163,7 +163,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
               fontFamily: 'monospace',
             }}
           >
-            dreport.studio
+            daely.report
           </div>
         </div>
       </div>

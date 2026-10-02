@@ -17,8 +17,13 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Report Studio",
+  title: "Daely Report",
   description: "Dashboard laporan progres murid dengan AI",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -34,7 +39,7 @@ export default function RootLayout({
     >
       <body 
         suppressHydrationWarning
-        className="min-h-full flex flex-col bg-white text-black font-sans select-none overflow-x-hidden"
+        className="min-h-full flex flex-col bg-background text-text-primary font-sans select-none overflow-x-hidden"
       >
         <LocaleProvider>
           <ThemeProvider>

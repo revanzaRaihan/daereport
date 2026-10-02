@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
+import { compressImage } from '@/lib/imageCompressor'
 import CustomSelect from '@/components/CustomSelect'
 import CustomDatePicker from '@/components/CustomDatePicker'
 import { useTranslation } from '@/components/LocaleProvider'
@@ -20,8 +20,6 @@ import {
   Loader2,
   Image as ImageIcon,
   Clock,
-  BookOpen,
-  History,
   GraduationCap,
   X
 } from 'lucide-react'
@@ -29,7 +27,7 @@ import {
 export default function LaporanBuilderPage() {
   const router = useRouter()
   const supabase = createClient()
-  const { t, locale } = useTranslation()
+  const { t, locale, setLocale } = useTranslation()
   const [userId, setUserId] = useState<string | null>(null)
   
   // Data States
@@ -42,7 +40,7 @@ export default function LaporanBuilderPage() {
   const [reportDate, setReportDate] = useState('')
   const [materi, setMateri] = useState('')
   const [behavior, setBehavior] = useState('')
-  const [language, setLanguage] = useState<'id' | 'en'>('id')
+  const [language, setLanguage] = useState<'id' | 'en'>(locale || 'id')
   const [reportType, setReportType] = useState<'full' | 'overview'>('full')
   const [mode, setMode] = useState<'ai' | 'manual'>('manual')
 
@@ -68,10 +66,10 @@ export default function LaporanBuilderPage() {
       if (user) {
         setUserId(user.id)
         
-        // Fetch students & schedules
+        // Fetch students
         const { data: studentsData } = await supabase
           .from('students')
-          .select('*, schedules:schedule_student(schedule:schedules(*))')
+          .select('*')
           .order('name')
 
         // Fetch dataset counts
@@ -108,27 +106,9 @@ export default function LaporanBuilderPage() {
 
             let nextDate = ''
             if (lastReport) {
-              const lastDate = new Date(lastReport.report_date)
-              const scheduleDays = (s.schedules || []).map((sc: any) => Number(sc.schedule?.day_of_week)).filter(Boolean)
-              
-              if (scheduleDays.length > 0) {
-                const checkDate = new Date(lastDate)
-                checkDate.setDate(checkDate.getDate() + 1)
-                for (let i = 0; i < 14; i++) {
-                  const jsDay = checkDate.getDay()
-                  const dayIso = jsDay === 0 ? 7 : jsDay
-                  if (scheduleDays.includes(dayIso)) {
-                    nextDate = checkDate.toISOString().split('T')[0]
-                    break
-                  }
-                  checkDate.setDate(checkDate.getDate() + 1)
-                }
-              }
-              if (!nextDate) {
-                const fallbackDate = new Date(lastDate)
-                fallbackDate.setDate(fallbackDate.getDate() + 7)
-                nextDate = fallbackDate.toISOString().split('T')[0]
-              }
+              const fallbackDate = new Date(lastReport.report_date)
+              fallbackDate.setDate(fallbackDate.getDate() + 7)
+              nextDate = fallbackDate.toISOString().split('T')[0]
             } else {
               nextDate = s.first_meeting_date || new Date().toISOString().split('T')[0]
             }
@@ -143,6 +123,25 @@ export default function LaporanBuilderPage() {
     }
     initPage()
   }, [supabase])
+
+  // Keep local language in sync with global locale
+  useEffect(() => {
+    if (locale === 'id' || locale === 'en') {
+      setLanguage(locale)
+    }
+  }, [locale])
+
+  const handleLanguageChange = (val: 'id' | 'en') => {
+    setLanguage(val)
+    setLocale(val)
+    if (mode === 'manual' && generatedText) {
+      const student = students.find(s => s.id === selectedStudentId)
+      if (student) {
+        const manualText = assembleManualReport(student, meetingNumber, reportDate, materi, behavior, val)
+        setGeneratedText(manualText)
+      }
+    }
+  }
 
   const handleStudentChange = (id: string) => {
     setSelectedStudentId(id)
@@ -231,12 +230,16 @@ export default function LaporanBuilderPage() {
       let imageUrl: string | null = null
 
       if (selectedImage) {
-        const fileExt = selectedImage.name.split('.').pop()
+        const fileToUpload = await compressImage(selectedImage)
+        const fileExt = fileToUpload.name.split('.').pop() || 'jpg'
         const fileName = `${selectedStudentId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
         
         const { data: uploadData, error: uploadErr } = await supabase.storage
           .from('reports')
-          .upload(fileName, selectedImage)
+          .upload(fileName, fileToUpload, {
+            cacheControl: '2592000', // 30 hari cache
+            upsert: false
+          })
 
         if (uploadErr) {
           throw new Error('Gagal mengunggah foto: ' + uploadErr.message)
@@ -315,8 +318,8 @@ export default function LaporanBuilderPage() {
   ]
 
   const reportTypeOptions = [
-    { value: 'full', label: 'Laporan Lengkap' },
-    { value: 'overview', label: 'Hanya Ringkasan' }
+    { value: 'full', label: t('report_type_full') },
+    { value: 'overview', label: t('report_type_overview') }
   ]
 
   return (
@@ -326,25 +329,6 @@ export default function LaporanBuilderPage() {
         <div className="flex items-center gap-3">
           <PenTool className="w-6 h-6 text-primary" />
           <h2 className="text-xl font-bold text-black tracking-tighter uppercase font-editorial-headline">{t('header_create_ai')}</h2>
-        </div>
-
-        {/* Button group: secondary outline + primary blue */}
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/dataset"
-            className="h-10 px-4 rounded-xl border border-black/10 hover:bg-neutral-100 transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] text-xs font-semibold text-black flex items-center gap-1.5 cursor-pointer bg-white"
-          >
-            <BookOpen className="w-4 h-4 text-neutral-400" />
-            <span>{t('nav_dataset')}</span>
-          </Link>
-          
-          <Link
-            href="/history"
-            className="h-10 px-4 rounded-xl bg-black hover:bg-neutral-800 transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer"
-          >
-            <History className="w-4 h-4" />
-            <span>{locale === 'id' ? 'Lihat Riwayat' : 'View History'}</span>
-          </Link>
         </div>
       </div>
 
@@ -403,7 +387,7 @@ export default function LaporanBuilderPage() {
           <CustomSelect
             options={languageOptions}
             value={language}
-            onChange={(val) => setLanguage(val as any)}
+            onChange={(val) => handleLanguageChange(val as any)}
             placeholder={t('placeholder_lang')}
             isSearchable={false}
             className="pl-10"
@@ -432,93 +416,93 @@ export default function LaporanBuilderPage() {
           {/* Card Header: 48px avatar, title, subtitle, top-right status badge */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary text-background flex items-center justify-center font-bold text-sm font-mono uppercase">
+              <div className="w-12 h-12 rounded-full bg-accent text-white flex items-center justify-center font-bold text-sm font-mono uppercase">
                 {currentStudent ? currentStudent.name.substring(0, 2).toUpperCase() : 'LS'}
               </div>
               <div>
                 <h3 className="text-sm font-bold text-black leading-tight">
-                  {currentStudent ? currentStudent.name : (locale === 'id' ? 'Pilih Murid' : 'Select Student')}
+                  {currentStudent ? currentStudent.name : t('select_student_prompt')}
                 </h3>
                 <p className="text-xs text-neutral-550 font-medium">
-                  {currentStudent ? currentStudent.subject : (locale === 'id' ? 'Pelajaran les privat' : 'Private tutoring subject')}
+                  {currentStudent ? currentStudent.subject : t('private_tutoring_desc')}
                 </p>
               </div>
             </div>
 
             {/* Status Badge: Compact, color-coded, 10px bold uppercase */}
-            <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-neutral-100 text-black border border-black/10 font-mono">
-              {locale === 'id' ? 'PERTEMUAN' : 'MEETING'} {meetingNumber}
+            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-accent/15 text-accent border border-accent/30 font-mono">
+              {t('badge_meeting')} {meetingNumber}
             </span>
           </div>
 
           {/* Form Body */}
           <div className="space-y-5 pt-2">
 
-            {/* Mode Selector Tab Group (Premium Glassmorphism / Sleek design) */}
-            <div className="grid grid-cols-2 gap-1 p-1 bg-neutral-100/80 backdrop-blur-sm rounded-xl border border-black/5">
+            {/* Mode Selector Tab Group */}
+            <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-black/5 dark:bg-black/30 rounded-xl border border-border-color">
               <button
                 type="button"
                 onClick={() => setMode('ai')}
-                className={`flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold rounded-lg transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer ${
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                   mode === 'ai'
-                    ? 'bg-white text-black shadow-[0_2px_4px_rgba(0,0,0,0.04)] border border-black/5 scale-[1.01]'
-                    : 'text-neutral-500 hover:text-black hover:bg-neutral-50/50'
+                    ? 'bg-accent text-white shadow-xs font-extrabold scale-[1.01]'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5'
                 }`}
               >
-                <Sparkles className={`w-3.5 h-3.5 ${mode === 'ai' ? 'text-primary animate-pulse' : 'text-neutral-400'}`} />
-                <span>{locale === 'id' ? 'Asisten AI' : 'AI Assistant'}</span>
+                <Sparkles className={`w-3.5 h-3.5 ${mode === 'ai' ? 'text-yellow-300' : 'text-neutral-400'}`} />
+                <span>{t('mode_ai')}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setMode('manual')}
-                className={`flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold rounded-lg transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer ${
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                   mode === 'manual'
-                    ? 'bg-white text-black shadow-[0_2px_4px_rgba(0,0,0,0.04)] border border-black/5 scale-[1.01]'
-                    : 'text-neutral-500 hover:text-black hover:bg-neutral-50/50'
+                    ? 'bg-accent text-white shadow-xs font-extrabold scale-[1.01]'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5'
                 }`}
               >
-                <PenTool className={`w-3.5 h-3.5 ${mode === 'manual' ? 'text-black' : 'text-neutral-400'}`} />
-                <span>{locale === 'id' ? 'Mode Manual' : 'Manual Mode'}</span>
+                <PenTool className={`w-3.5 h-3.5 ${mode === 'manual' ? 'text-white' : 'text-neutral-400'}`} />
+                <span>{t('mode_manual')}</span>
               </button>
             </div>
 
             {/* Manual Meeting Number & Date Override */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="border border-black/10 focus-within:border-black focus-within:shadow-[0_0_0_1px_#000000] rounded-xl p-3 bg-white transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20">
-                <label className="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider font-mono mb-1">
-                  {locale === 'id' ? 'Pertemuan Ke-' : 'Meeting Number'}
+              <div className="border border-border-color focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 rounded-xl p-3.5 bg-input-bg transition-all shadow-2xs hover:border-accent/40">
+                <label className="block text-[10px] font-extrabold text-text-secondary uppercase tracking-wider font-mono mb-1">
+                  {t('label_meeting_no')}
                 </label>
                 <div className="relative flex items-center">
-                  <span className="text-neutral-400 font-mono text-xs mr-1">#</span>
+                  <span className="text-accent font-mono text-xs font-bold mr-1.5">#</span>
                   <input
                     type="number"
                     min={1}
                     required
                     value={meetingNumber}
                     onChange={(e) => setMeetingNumber(Number(e.target.value))}
-                    className="w-full bg-transparent border-0 p-0 text-xs text-black font-semibold focus:ring-0 focus:outline-none"
+                    className="w-full bg-transparent border-0 p-0 text-sm text-text-primary font-bold focus:ring-0 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="border border-black/10 focus-within:border-black focus-within:shadow-[0_0_0_1px_#000000] rounded-xl p-3 bg-white transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20">
-                <label className="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider font-mono mb-1">
-                  {locale === 'id' ? 'Tanggal Laporan' : 'Report Date'}
+              <div className="border border-border-color focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 rounded-xl p-3.5 bg-input-bg transition-all shadow-2xs hover:border-accent/40">
+                <label className="block text-[10px] font-extrabold text-text-secondary uppercase tracking-wider font-mono mb-1">
+                  {t('label_report_date')}
                 </label>
                 <input
                   type="date"
                   required
                   value={reportDate}
                   onChange={(e) => setReportDate(e.target.value)}
-                  className="w-full bg-transparent border-0 p-0 text-xs text-black font-semibold focus:ring-0 focus:outline-none"
+                  className="w-full bg-transparent border-0 p-0 text-sm text-text-primary font-semibold focus:ring-0 focus:outline-none"
                 />
               </div>
             </div>
 
             {/* Material Area */}
             {mode === 'ai' && (
-              <div className="border border-black/10 focus-within:border-black focus-within:shadow-[0_0_0_1px_#000000] rounded-xl p-4 bg-white transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20">
-                <label className="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider font-mono mb-1.5">
+              <div className="border border-border-color focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 rounded-xl p-4 bg-input-bg transition-all shadow-2xs hover:border-accent/40">
+                <label className="block text-[10px] font-extrabold text-text-secondary uppercase tracking-wider font-mono mb-1.5">
                   {t('label_material')}
                 </label>
                 <textarea
@@ -527,14 +511,14 @@ export default function LaporanBuilderPage() {
                   value={materi}
                   onChange={(e) => setMateri(e.target.value)}
                   placeholder={t('placeholder_material')}
-                  className="w-full bg-transparent border-0 p-0 text-xs text-black leading-relaxed focus:ring-0 focus:outline-none resize-y min-h-[70px]"
+                  className="w-full bg-transparent border-0 p-0 text-xs text-text-primary leading-relaxed focus:ring-0 focus:outline-none resize-y min-h-[70px] placeholder:text-text-secondary/50 font-medium"
                 />
               </div>
             )}
 
             {/* Behavior Area */}
-            <div className="border border-black/10 focus-within:border-black focus-within:shadow-[0_0_0_1px_#000000] rounded-xl p-4 bg-white transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/20">
-              <label className="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider font-mono mb-1.5">
+            <div className="border border-border-color focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 rounded-xl p-4 bg-input-bg transition-all shadow-2xs hover:border-accent/40">
+                <label className="block text-[10px] font-extrabold text-text-secondary uppercase tracking-wider font-mono mb-1.5">
                 {t('label_behavior')}
               </label>
               <textarea
@@ -543,15 +527,15 @@ export default function LaporanBuilderPage() {
                 value={behavior}
                 onChange={(e) => setBehavior(e.target.value)}
                 placeholder={t('placeholder_behavior')}
-                className="w-full bg-transparent border-0 p-0 text-xs text-black leading-relaxed focus:ring-0 focus:outline-none resize-y min-h-[70px]"
+                className="w-full bg-transparent border-0 p-0 text-xs text-text-primary leading-relaxed focus:ring-0 focus:outline-none resize-y min-h-[70px] placeholder:text-text-secondary/50 font-medium"
               />
             </div>
 
             {/* Optional Image Upload */}
             <div>
-              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5 font-mono">
-                <ImageIcon className="w-3.5 h-3.5 text-neutral-400" />
-                {locale === 'id' ? 'Foto Progres (Opsional)' : 'Progress Photo (Optional)'}
+              <label className="block text-[10px] font-extrabold text-text-secondary uppercase tracking-widest mb-1.5 flex items-center gap-1.5 font-mono">
+                <ImageIcon className="w-3.5 h-3.5 text-accent" />
+                {t('label_progress_photo')}
               </label>
               <input
                 type="file"
@@ -564,32 +548,34 @@ export default function LaporanBuilderPage() {
               {!selectedImage ? (
                 <div 
                   onClick={() => fileInputRef.current?.click()}
-                  className="border border-dashed border-black/10 hover:border-black/30 bg-neutral-50/30 hover:bg-neutral-50/85 rounded-xl p-6 text-center cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] group"
+                  className="border-2 border-dashed border-border-color hover:border-accent bg-input-bg rounded-xl p-5 text-center cursor-pointer transition-all duration-200 group shadow-2xs"
                 >
-                  <ImageIcon className="w-6 h-6 text-neutral-400 mx-auto mb-2 group-hover:text-black transition-colors" />
-                  <p className="text-xs font-bold text-black font-mono uppercase tracking-wider">
-                    {locale === 'id' ? 'Pilih Gambar' : 'Choose Image'}
+                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform">
+                    <ImageIcon className="w-5 h-5 text-accent" />
+                  </div>
+                  <p className="text-xs font-bold text-text-primary font-mono uppercase tracking-wider group-hover:text-accent transition-colors">
+                    {t('btn_choose_image')}
                   </p>
-                  <p className="text-[10px] text-neutral-400 mt-1">
-                    {locale === 'id' ? 'Klik untuk mencari foto dari perangkat' : 'Click to select photo from device'}
+                  <p className="text-[10px] text-text-secondary mt-0.5">
+                    {t('label_choose_image_desc')}
                   </p>
                 </div>
               ) : (
-                <div className="flex items-center justify-between p-3 border border-black/10 bg-white rounded-xl shadow-none">
+                <div className="flex items-center justify-between p-3 border border-border-color bg-input-bg rounded-xl shadow-2xs">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden border border-black/5 bg-neutral-50 shrink-0">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden border border-border-color bg-neutral-50 shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
                         src={URL.createObjectURL(selectedImage)} 
                         alt="Preview" 
-                        className="w-full h-full object-cover filter grayscale contrast-115"
+                        className="w-full h-full object-cover filter contrast-105"
                       />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-black truncate max-w-[150px] sm:max-w-[250px]">
+                      <p className="text-xs font-bold text-text-primary truncate max-w-[150px] sm:max-w-[250px]">
                         {selectedImage.name}
                       </p>
-                      <p className="text-[10px] text-neutral-450 font-mono font-bold">
+                      <p className="text-[10px] text-text-secondary font-mono font-bold">
                         {(selectedImage.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
@@ -600,7 +586,7 @@ export default function LaporanBuilderPage() {
                       setSelectedImage(null)
                       if (fileInputRef.current) fileInputRef.current.value = ''
                     }}
-                    className="p-1.5 text-neutral-400 hover:text-black rounded-lg hover:bg-neutral-100 transition-colors cursor-pointer"
+                    className="p-1.5 text-text-secondary hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -616,24 +602,24 @@ export default function LaporanBuilderPage() {
               type="submit"
               onClick={handleGenerate}
               disabled={generating || !selectedStudentId}
-              className="w-full bg-primary hover:bg-primary/80 disabled:bg-neutral-200 disabled:text-neutral-450 text-background text-xs font-bold uppercase tracking-wider py-3 rounded-xl shadow-none flex items-center justify-center gap-2 cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98]"
+              className="w-full bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent text-white text-xs font-extrabold uppercase tracking-wider py-3.5 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed"
             >
               {generating ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-background" />
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
                   <span>{t('btn_generating')}</span>
                 </>
               ) : (
                 <>
                   {mode === 'ai' ? (
                     <>
-                      <Send className="w-4 h-4 text-background" />
+                      <Send className="w-4 h-4 text-white" />
                       <span>{t('btn_generate')}</span>
                     </>
                   ) : (
                     <>
-                      <PenTool className="w-4 h-4 text-background" />
-                      <span>{locale === 'id' ? 'Format Laporan' : 'Format Report'}</span>
+                      <PenTool className="w-4 h-4 text-white" />
+                      <span>{t('btn_format_report')}</span>
                     </>
                   )}
                 </>
@@ -648,24 +634,24 @@ export default function LaporanBuilderPage() {
           {/* Card Header: 48px avatar, title, subtitle, top-right status badge */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary text-background flex items-center justify-center font-bold">
-                <Sparkles className="w-5 h-5 text-background animate-pulse" />
+              <div className="w-12 h-12 rounded-full bg-accent text-white flex items-center justify-center font-bold">
+                <Sparkles className="w-5 h-5 text-white animate-pulse" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-text-primary leading-tight">{locale === 'id' ? 'Draf Hasil Laporan' : 'Draft Report Result'}</h3>
+                <h3 className="text-sm font-bold text-text-primary leading-tight">{t('card_draft_title')}</h3>
                 <p className="text-xs text-text-secondary font-medium">
                   {generatedText 
-                    ? (locale === 'id' ? 'Draf AI berhasil dibuat' : 'AI draft created successfully') 
-                    : (locale === 'id' ? 'Belum ada draf terbuat' : 'No draft created yet')}
+                    ? t('draft_ready_desc')
+                    : t('draft_empty_desc')}
                 </p>
               </div>
             </div>
 
             {/* Status Badge */}
-            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider font-mono ${
+            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider font-mono ${
               generatedText 
-                ? 'bg-primary text-background' 
-                : 'border border-border-color text-text-primary bg-card'
+                ? 'bg-accent text-white shadow-xs' 
+                : 'bg-black/5 dark:bg-white/5 text-text-secondary border border-border-color'
             }`}>
               {generatedText ? 'READY' : 'EMPTY'}
             </span>
@@ -674,25 +660,23 @@ export default function LaporanBuilderPage() {
           {/* Form Body / Content Area */}
           <div className="space-y-4 min-h-[295px] flex flex-col justify-between">
             {!generatedText && !generating && (
-              <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-text-secondary border border-dashed border-border-color rounded-xl min-h-[200px]">
-                <Sparkles className="w-8 h-8 text-text-secondary/60 mb-2" />
-                <span className="text-xs font-bold text-text-secondary font-mono">{locale === 'id' ? 'Menunggu Pembuatan Laporan' : 'Waiting for Report Generation'}</span>
-                <p className="text-[10px] text-text-secondary/80 mt-1 max-w-[250px]">
-                  {locale === 'id' 
-                    ? 'Pilih murid dan isi deskripsi materi di sebelah kiri, lalu klik tombol Generate.' 
-                    : 'Select a student and fill out the lesson details on the left, then click Generate.'}
+              <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-text-secondary border-2 border-dashed border-border-color bg-input-bg/70 rounded-xl min-h-[200px]">
+                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-2">
+                  <Sparkles className="w-6 h-6 text-accent" />
+                </div>
+                <span className="text-xs font-bold text-text-primary font-mono">{t('waiting_report_title')}</span>
+                <p className="text-[10px] text-text-secondary mt-1 max-w-[250px]">
+                  {t('waiting_report_desc')}
                 </p>
               </div>
             )}
 
             {generating && (
-              <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-text-secondary bg-card border border-dashed border-border-color rounded-xl min-h-[200px] space-y-2">
-                <Loader2 className="w-7 h-7 text-text-primary animate-spin" />
-                <span className="text-xs font-bold text-text-secondary font-mono">{locale === 'id' ? 'Memproses...' : 'Processing...'}</span>
-                <p className="text-[10px] text-text-secondary/80 mt-1 max-w-[220px]">
-                  {locale === 'id' 
-                    ? 'AI sedang mencocokkan materi dengan contoh dataset Anda.' 
-                    : 'AI is matching lesson details with your writing style dataset.'}
+              <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-text-secondary bg-input-bg border-2 border-dashed border-accent/40 rounded-xl min-h-[200px] space-y-2">
+                <Loader2 className="w-7 h-7 text-accent animate-spin" />
+                <span className="text-xs font-bold text-text-primary font-mono">{t('processing_report_title')}</span>
+                <p className="text-[10px] text-text-secondary mt-1 max-w-[220px]">
+                  {t('processing_report_desc')}
                 </p>
               </div>
             )}
@@ -700,8 +684,8 @@ export default function LaporanBuilderPage() {
             {generatedText && (
               <div className="space-y-4 flex-1 flex flex-col justify-between">
                 {warningMsg && (
-                  <div className="bg-card border border-border-color text-text-primary text-[10px] px-3.5 py-2 rounded-xl flex gap-2 font-semibold">
-                    <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-text-primary" />
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-[10px] px-3.5 py-2 rounded-xl flex gap-2 font-semibold">
+                    <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-600" />
                     <span>{warningMsg}</span>
                   </div>
                 )}
@@ -712,7 +696,7 @@ export default function LaporanBuilderPage() {
                     rows={10}
                     value={generatedText}
                     onChange={(e) => setGeneratedText(e.target.value)}
-                    className="w-full flex-1 bg-card border border-border-color rounded-xl p-4 text-xs text-text-primary font-mono leading-relaxed focus:outline-none focus:border-primary focus:shadow-[0_0_0_1px_var(--primary)] resize-y"
+                    className="w-full flex-1 bg-input-bg border border-border-color rounded-xl p-4 text-xs text-text-primary font-mono leading-relaxed focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 resize-y shadow-2xs"
                   />
                 </div>
               </div>
@@ -726,16 +710,16 @@ export default function LaporanBuilderPage() {
                 type="button"
                 onClick={handleSaveToHistory}
                 disabled={saving}
-                className="w-full bg-primary hover:bg-primary/80 disabled:bg-neutral-200 disabled:text-neutral-450 text-background text-xs font-bold uppercase tracking-wider py-3 rounded-xl shadow-none flex items-center justify-center gap-2 cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98]"
+                className="w-full bg-accent hover:bg-accent-hover disabled:bg-neutral-200 text-white text-xs font-black uppercase tracking-wider py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin text-background" />
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
                     <span>{t('btn_saving')}</span>
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4 text-background" />
+                    <Save className="w-4 h-4 text-white" />
                     <span>{t('btn_save')}</span>
                   </>
                 )}
@@ -770,7 +754,9 @@ function assembleManualReport(
   }
 
   const line1 = formattedDate
-  const line2 = `${student.subject} Meeting ${meetingNumber}`
+  const line2 = language === 'id'
+    ? `${student.subject} Pertemuan ${meetingNumber}`
+    : `${student.subject} Meeting ${meetingNumber}`
 
   const line3 = (behavior || '').trim()
 

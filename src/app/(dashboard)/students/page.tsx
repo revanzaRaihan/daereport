@@ -9,47 +9,26 @@ import { useConfirm } from '@/components/ConfirmProvider'
 import { slugify } from '@/lib/slug'
 import { 
   Users, 
-  Calendar, 
   Plus, 
   Edit2, 
   Trash2, 
-  GraduationCap, 
-  Clock, 
   Check, 
   Loader2,
   X,
   Search,
   BookOpen,
   Share2,
-  Copy
+  Copy,
+  ArrowLeft,
+  ArrowRight,
+  ArrowRightLeft
 } from 'lucide-react'
 
-const DAYS_MAP: Record<number, string> = {
-  1: 'Senin',
-  2: 'Selasa',
-  3: 'Rabu',
-  4: 'Kamis',
-  5: 'Jumat',
-  6: 'Sabtu',
-  7: 'Minggu'
-}
-
-const DAYS_MAP_EN: Record<number, string> = {
-  1: 'Monday',
-  2: 'Tuesday',
-  3: 'Wednesday',
-  4: 'Thursday',
-  5: 'Friday',
-  6: 'Saturday',
-  7: 'Sunday'
-}
-
-export default function StudentsAndSchedulesPage() {
+export default function StudentsPage() {
   const supabase = createClient()
   const { t, locale } = useTranslation()
   const { confirm } = useConfirm()
   const [userId, setUserId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'students' | 'schedules'>('students')
 
   // Loaders & Errors
   const [loading, setLoading] = useState(true)
@@ -57,59 +36,66 @@ export default function StudentsAndSchedulesPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
-  // Data States
-  const [students, setStudents] = useState<any[]>([])
-  const [schedules, setSchedules] = useState<any[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
+  // Multi-User & Admin States
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [teachersOverview, setTeachersOverview] = useState<any[]>([])
+  const [allTeachers, setAllTeachers] = useState<any[]>([])
+  const [selectedTeacher, setSelectedTeacher] = useState<any | null>(null)
+  const [teacherSearchQuery, setTeacherSearchQuery] = useState('')
 
-  // Student Form States
+  // Transfer Student Modal State
+  const [transferModalStudent, setTransferModalStudent] = useState<any | null>(null)
+  const [targetTeacherId, setTargetTeacherId] = useState<string>('')
+  const [transferring, setTransferring] = useState(false)
+
+  // Students Data States
+  const [students, setStudents] = useState<any[]>([])
   const [showStudentModal, setShowStudentModal] = useState(false)
   const [editingStudent, setEditingStudent] = useState<any | null>(null)
   const [studentName, setStudentName] = useState('')
   const [studentSubject, setStudentSubject] = useState('')
   const [studentFirstMeeting, setStudentFirstMeeting] = useState('')
   const [studentMeetingCount, setStudentMeetingCount] = useState<number>(0)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  // Schedule Form States
-  const [showScheduleModal, setShowScheduleModal] = useState(false)
-  const [editingSchedule, setEditingSchedule] = useState<any | null>(null)
-  const [schedDay, setSchedDay] = useState<number>(1)
-  const [schedStart, setSchedStart] = useState('')
-  const [schedEnd, setSchedEnd] = useState('')
-  const [schedLabel, setSchedLabel] = useState('')
-  const [schedStudentIds, setSchedStudentIds] = useState<string[]>([])
-  const [schedStudentSearchQuery, setSchedStudentSearchQuery] = useState('')
-
-  // Share Modal States
+  // Share Portal Modal State
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareText, setShareText] = useState('')
   const [shareCopied, setShareCopied] = useState(false)
 
-  // Fetch all data
+  // --- FETCH DATA ---
   const fetchData = async () => {
     setLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setUserId(user.id)
+      if (!user) return
 
-        // 1. Fetch Students
-        const { data: studentsData } = await supabase
-          .from('students')
-          .select('*')
-          .order('name')
-        setStudents(studentsData || [])
+      setUserId(user.id)
+      const userIsAdmin = user.user_metadata?.role === 'admin' || user.email === 'admintdabalikpapan@timedoor.co.id'
+      setIsAdmin(userIsAdmin)
 
-        // 2. Fetch Schedules
-        const { data: schedulesData } = await supabase
-          .from('schedules')
-          .select('*, schedule_student(student_id)')
-          .order('day_of_week')
-          .order('start_time')
-        setSchedules(schedulesData || [])
+      // 1. Fetch Students
+      const { data: studentsData } = await supabase
+        .from('students')
+        .select('*')
+        .order('name')
+      setStudents(studentsData || [])
+
+      // 2. If Admin, fetch teacher overview & all registered teachers for transfer
+      if (userIsAdmin) {
+        const { data: overview } = await supabase.rpc('get_teachers_overview')
+        if (overview) {
+          setTeachersOverview(overview)
+        }
+
+        const { data: teachersList } = await supabase.rpc('get_all_teachers')
+        if (teachersList) {
+          setAllTeachers(teachersList)
+        }
       }
-    } catch (e) {
-      console.error(e)
+    } catch (err: any) {
+      console.error(err)
+      triggerToast('error', 'Gagal memuat data murid.')
     } finally {
       setLoading(false)
     }
@@ -118,6 +104,36 @@ export default function StudentsAndSchedulesPage() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  const handleOpenTransferModal = (student: any) => {
+    setTransferModalStudent(student)
+    setTargetTeacherId('')
+  }
+
+  const handleConfirmTransfer = async () => {
+    if (!transferModalStudent || !targetTeacherId) return
+    setTransferring(true)
+    try {
+      const { error } = await supabase.rpc('transfer_student', {
+        target_student_id: transferModalStudent.id,
+        new_teacher_id: targetTeacherId
+      })
+      if (error) throw error
+
+      const newTeacher = teachersOverview.find(t => t.teacher_id === targetTeacherId) || allTeachers.find(t => t.teacher_id === targetTeacherId)
+      triggerToast('success', locale === 'id' 
+        ? `Murid ${transferModalStudent.name} dan riwayat laporannya berhasil dipindahkan ke ${newTeacher?.name || 'guru baru'}.`
+        : `Student ${transferModalStudent.name} and reports successfully transferred to ${newTeacher?.name || 'new teacher'}.`
+      )
+      setTransferModalStudent(null)
+      setTargetTeacherId('')
+      await fetchData()
+    } catch (err: any) {
+      triggerToast('error', err.message || 'Gagal memindahkan murid.')
+    } finally {
+      setTransferring(false)
+    }
+  }
 
   const triggerToast = (type: 'success' | 'error', message: string) => {
     if (type === 'success') {
@@ -181,6 +197,7 @@ export default function StudentsAndSchedulesPage() {
         triggerToast('success', 'Data murid berhasil diperbarui.')
       } else {
         // Create
+        const targetOwnerId = (isAdmin && selectedTeacher) ? selectedTeacher.teacher_id : currentUserId
         const { error } = await supabase
           .from('students')
           .insert({
@@ -188,7 +205,7 @@ export default function StudentsAndSchedulesPage() {
             subject: studentSubject,
             first_meeting_date: studentFirstMeeting || null,
             meeting_count: studentMeetingCount,
-            user_id: currentUserId
+            user_id: targetOwnerId
           })
 
         if (error) throw error
@@ -217,183 +234,22 @@ export default function StudentsAndSchedulesPage() {
     })
   }
 
-  // --- SCHEDULE ACTIONS ---
-  const handleOpenScheduleModal = (sched: any | null = null) => {
-    setEditingSchedule(sched)
-    setSchedStudentSearchQuery('')
-    if (sched) {
-      setSchedDay(sched.day_of_week)
-      setSchedStart(sched.start_time.substring(0, 5))
-      setSchedEnd(sched.end_time.substring(0, 5))
-      setSchedLabel(sched.label || '')
-      setSchedStudentIds(sched.schedule_student?.map((s: any) => s.student_id) || [])
-    } else {
-      setSchedDay(1)
-      setSchedStart('')
-      setSchedEnd('')
-      setSchedLabel('')
-      setSchedStudentIds([])
-    }
-    setShowScheduleModal(true)
-  }
-
-  const handleScheduleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitting(true)
-    setErrorMsg('')
-
-    if (!schedStart || !schedEnd) {
-      triggerToast('error', locale === 'id' ? 'Jam mulai dan jam selesai harus diisi.' : 'Start and end times are required.')
-      setSubmitting(false)
-      return
-    }
-
-    if (schedStart >= schedEnd) {
-      triggerToast('error', locale === 'id' ? 'Jam mulai harus sebelum jam selesai.' : 'Start time must be before end time.')
-      setSubmitting(false)
-      return
-    }
-
-    try {
-      let currentUserId = userId
-      if (!currentUserId) {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          currentUserId = user.id
-          setUserId(user.id)
-        }
-      }
-
-      if (!currentUserId) {
-        throw new Error(locale === 'id' ? 'Sesi berakhir, silakan login kembali.' : 'Session expired, please login again.')
-      }
-
-      let scheduleId = editingSchedule?.id
-
-      if (editingSchedule) {
-        // Edit Schedule Table
-        const { error } = await supabase
-          .from('schedules')
-          .update({
-            day_of_week: schedDay,
-            start_time: schedStart,
-            end_time: schedEnd,
-            label: schedLabel
-          })
-          .eq('id', scheduleId)
-
-        if (error) throw error
-
-        // Delete existing relations
-        await supabase.from('schedule_student').delete().eq('schedule_id', scheduleId)
-      } else {
-        // Create Schedule Table
-        const newScheduleId = typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID
-          ? window.crypto.randomUUID()
-          : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-              const r = Math.random() * 16 | 0
-              const v = c === 'x' ? r : (r & 0x3 | 0x8)
-              return v.toString(16)
-            })
-
-        const { data, error } = await supabase
-          .from('schedules')
-          .insert({
-            id: newScheduleId,
-            day_of_week: schedDay,
-            start_time: schedStart,
-            end_time: schedEnd,
-            label: schedLabel,
-            user_id: currentUserId
-          })
-          .select()
-          .single()
-
-        if (error) throw error
-        scheduleId = data.id
-      }
-
-      // Sync/Insert new Relations into schedule_student
-      if (schedStudentIds.length > 0) {
-        const relations = schedStudentIds.map(sid => ({
-          schedule_id: scheduleId,
-          student_id: sid
-        }))
-        const { error: relErr } = await supabase.from('schedule_student').insert(relations)
-        if (relErr) throw relErr
-      }
-
-      triggerToast('success', 'Jadwal belajar berhasil disimpan.')
-      setShowScheduleModal(false)
-      fetchData()
-    } catch (err: any) {
-      triggerToast('error', err.message || 'Gagal menyimpan jadwal.')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const handleDeleteSchedule = (id: string) => {
-    confirm({
-      message: locale === 'id'
-        ? 'Apakah Anda yakin ingin menghapus jadwal ini?'
-        : 'Are you sure you want to delete this schedule?',
-      onConfirm: async () => {
-        const { error } = await supabase.from('schedules').delete().eq('id', id)
-        if (error) throw error
-        triggerToast('success', 'Jadwal berhasil dihapus.')
-        fetchData()
-      }
-    })
-  }
-
-  const toggleStudentSelection = (sid: string) => {
-    if (schedStudentIds.includes(sid)) {
-      setSchedStudentIds(schedStudentIds.filter(id => id !== sid))
-    } else {
-      setSchedStudentIds([...schedStudentIds, sid])
-    }
-  }
-
-  const handleOpenShareModal = (specificSchedule?: any) => {
-    const isSchedule = specificSchedule && typeof specificSchedule === 'object' && 'day_of_week' in specificSchedule
-    let targetStudents = []
-
-    if (isSchedule) {
-      const assignedStudentIds = (specificSchedule.schedule_student || []).map((rel: any) => rel.student_id)
-      targetStudents = students.filter(s => assignedStudentIds.includes(s.id))
-    } else if (activeTab === 'schedules') {
-      const assignedStudentIds = Array.from(
-        new Set(
-          schedules.flatMap(sched => (sched.schedule_student || []).map((rel: any) => rel.student_id))
-        )
-      )
-      targetStudents = students.filter(s => assignedStudentIds.includes(s.id))
-    } else {
-      targetStudents = [...students]
-    }
-
-    targetStudents.sort((a, b) => a.name.localeCompare(b.name))
+  // --- SHARE PORTAL ACTION ---
+  const handleOpenShareModal = () => {
+    const targetStudents = [...displayedStudents].sort((a, b) => a.name.localeCompare(b.name))
 
     if (targetStudents.length === 0) {
       setShareText(locale === 'id' ? 'Belum ada data murid.' : 'No student data yet.')
     } else {
       const hostUrl = typeof window !== 'undefined' ? window.location.origin : ''
       const shareLines = targetStudents.map((s, idx) => {
-        const slug = slugify(s.name)
+        const slug = s.slug || slugify(s.name)
         return `${idx + 1}. ${s.name} : ${hostUrl}/p/${slug}.`
       })
-      
-      let headerText = 'PORTAL ORTU'
-      if (isSchedule) {
-        const dayStr = locale === 'id' ? DAYS_MAP[specificSchedule.day_of_week] : DAYS_MAP_EN[specificSchedule.day_of_week]
-        const timeStr = `${specificSchedule.start_time.substring(0, 5)} - ${specificSchedule.end_time.substring(0, 5)}`
-        headerText = `PORTAL ORTU - ${dayStr} (${timeStr})`
-      }
-      const text = `${headerText}\n${shareLines.join('\n')}`
+      const text = `PORTAL ORTU\n${shareLines.join('\n')}`
       setShareText(text)
     }
-    
+
     setShareCopied(false)
     setShowShareModal(true)
   }
@@ -409,60 +265,68 @@ export default function StudentsAndSchedulesPage() {
   }
 
   // Filters
-  const filteredStudents = students.filter(s => 
+  const displayedStudents = (isAdmin && selectedTeacher)
+    ? students.filter(s => s.user_id === selectedTeacher.teacher_id)
+    : students
+
+  const filteredStudents = displayedStudents.filter(s => 
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.subject.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  const filteredTeachers = teachersOverview.filter(t =>
+    t.name.toLowerCase().includes(teacherSearchQuery.toLowerCase()) ||
+    t.email.toLowerCase().includes(teacherSearchQuery.toLowerCase())
+  )
+
   return (
     <div className="space-y-6">
-      {/* Primary Content Header (Height: 64px, flex items-center justify-between) */}
+      {/* Primary Content Header */}
       <div className="h-16 flex items-center justify-between border-b border-black/10 pb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-black tracking-tighter uppercase font-editorial-headline">{t('students_title')}</h2>
+          {isAdmin && selectedTeacher && (
+            <button
+              onClick={() => {
+                setSelectedTeacher(null)
+                setSearchQuery('')
+              }}
+              className="p-2 rounded-xl bg-neutral-100 hover:bg-black hover:text-white text-black border border-black/10 transition-colors cursor-pointer flex items-center justify-center shadow-none"
+              title={locale === 'id' ? 'Kembali ke Semua Guru' : 'Back to All Teachers'}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
+          <h2 className="text-xl font-bold text-black tracking-tighter uppercase font-editorial-headline">
+            {isAdmin && !selectedTeacher
+              ? (locale === 'id' ? 'Pengajar & Murid' : 'Teachers & Students')
+              : (isAdmin && selectedTeacher
+                  ? selectedTeacher.name
+                  : t('students_title'))}
+          </h2>
           <div className="h-4 w-px bg-black/10" />
           <span className="text-xs font-medium text-neutral-500 font-mono tracking-wider">
-            {activeTab === 'students' 
-              ? `${students.length} ${t('nav_students')}` 
-              : `${schedules.length} ${locale === 'id' ? 'Jadwal' : 'Schedules'}`}
+            {isAdmin && !selectedTeacher
+              ? `${teachersOverview.length} ${locale === 'id' ? 'Pengajar Aktif' : 'Active Teachers'} • ${students.length} ${t('nav_students')}`
+              : `${displayedStudents.length} ${t('nav_students')}`}
           </span>
         </div>
 
-        {/* Tab Buttons & Add Button */}
-        <div className="flex items-center gap-3">
-          <div className="bg-neutral-100 border border-black/5 p-1 rounded-xl flex gap-1 text-xs font-semibold">
-            <button
-              onClick={() => setActiveTab('students')}
-              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'students' ? 'bg-black text-white font-bold' : 'text-neutral-500 hover:text-black'
-              }`}
-            >
-              {t('tab_students')}
-            </button>
-            <button
-              onClick={() => setActiveTab('schedules')}
-              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'schedules' ? 'bg-black text-white font-bold' : 'text-neutral-500 hover:text-black'
-              }`}
-            >
-              {t('tab_schedules')}
-            </button>
-          </div>
-
+        {/* Action Buttons: Bagikan Portal & Tambah Murid */}
+        <div className="flex items-center gap-2.5">
           <button
             onClick={handleOpenShareModal}
-            className="bg-white border border-black/10 hover:bg-neutral-100 text-black text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-none cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            className="bg-white border border-black/10 hover:bg-neutral-100 text-black text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-none cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
           >
             <Share2 className="w-4 h-4 text-neutral-500" />
             <span>{t('btn_share_portals')}</span>
           </button>
 
           <button
-            onClick={() => activeTab === 'students' ? handleOpenStudentModal() : handleOpenScheduleModal()}
-            className="bg-black hover:bg-neutral-800 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-none cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            onClick={() => handleOpenStudentModal()}
+            className="bg-black hover:bg-neutral-800 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-none cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
           >
             <Plus className="w-4 h-4" />
-            <span>{locale === 'id' ? 'Tambah' : 'Add'}</span>
+            <span>{locale === 'id' ? 'Tambah Murid' : 'Add Student'}</span>
           </button>
         </div>
       </div>
@@ -486,176 +350,174 @@ export default function StudentsAndSchedulesPage() {
           <Loader2 className="w-6 h-6 text-black animate-spin" />
         </div>
       ) : (
-        <>
-          {/* TAB 1: STUDENTS */}
-          {activeTab === 'students' && (
-            <div className="space-y-4">
-              {/* Search Bar */}
+        /* STUDENTS VIEW */
+        isAdmin && !selectedTeacher ? (
+          /* ADMIN TEACHER CARDS VIEW (3 Columns per Row) */
+          <div className="space-y-6">
+            <div className="bg-white border border-black/10 p-4 rounded-2xl shadow-none">
               <div className="relative max-w-md">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                 <input
                   type="text"
-                  placeholder={t('placeholder_search_student')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={locale === 'id' ? 'Cari nama guru atau email...' : 'Search teacher name or email...'}
+                  value={teacherSearchQuery}
+                  onChange={(e) => setTeacherSearchQuery(e.target.value)}
                   className="form-input-premium pl-10 shadow-none"
                 />
               </div>
-
-              {filteredStudents.length === 0 ? (
-                <div className="border border-dashed border-black/10 bg-white rounded-2xl p-12 text-center text-neutral-400 shadow-none">
-                  <Users className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
-                  <p className="font-bold text-sm text-black font-mono uppercase tracking-wider">
-                    {locale === 'id' ? 'Belum Ada Data Murid' : 'No Student Data Yet'}
-                  </p>
-                  <p className="text-xs text-neutral-500 mt-1">
-                    {locale === 'id' 
-                      ? 'Silakan klik tombol Tambah untuk mendaftarkan murid baru.' 
-                      : 'Please click the Add button to register a new student.'}
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-white border border-black/10 rounded-2xl overflow-hidden shadow-none">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-black/10 text-[10px] font-bold text-neutral-500 uppercase tracking-widest bg-neutral-50 font-mono">
-                        <th className="p-4">{t('label_student_name')}</th>
-                        <th className="p-4">{t('label_student_subject')}</th>
-                        <th className="p-4">{locale === 'id' ? 'Tanggal Mulai' : 'Start Date'}</th>
-                        <th className="p-4 text-center">{t('label_student_meet_count')}</th>
-                        <th className="p-4 text-right">{locale === 'id' ? 'Aksi' : 'Actions'}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-black/5 text-sm text-neutral-700">
-                      {filteredStudents.map((s) => (
-                        <tr key={s.id} className="hover:bg-neutral-50/50 transition-colors duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]">
-                          <td className="p-4 font-bold text-black">{s.name}</td>
-                          <td className="p-4">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-100 border border-black/5 text-black text-xs font-semibold rounded-xl font-mono uppercase">
-                              <BookOpen className="w-3.5 h-3.5" />
-                              {s.subject}
-                            </span>
-                          </td>
-                          <td className="p-4 text-neutral-500 font-mono text-xs">{s.first_meeting_date || '-'}</td>
-                          <td className="p-4 text-center font-bold text-black font-mono">{s.meeting_count || 0}</td>
-                          <td className="p-4 text-right space-x-1.5">
-                            <button
-                              onClick={() => handleOpenStudentModal(s)}
-                              className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
-                              title={t('btn_edit')}
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteStudent(s.id)}
-                              className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer font-bold"
-                              title={t('btn_delete')}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </div>
-          )}
 
-          {/* TAB 2: SCHEDULES */}
-          {activeTab === 'schedules' && (
-            <div>
-              {schedules.length === 0 ? (
-                <div className="border border-dashed border-black/10 bg-white rounded-2xl p-12 text-center text-neutral-400 shadow-none">
-                  <Calendar className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
-                  <p className="font-bold text-sm text-black font-mono uppercase tracking-wider">
-                    {locale === 'id' ? 'Belum Ada Jadwal Belajar' : 'No Lesson Schedules Yet'}
-                  </p>
-                  <p className="text-xs text-neutral-550 mt-1">
-                    {locale === 'id' 
-                      ? 'Klik tombol Tambah untuk membuat jadwal belajar dan menugaskannya ke murid.' 
-                      : 'Click the Add button to create a lesson schedule and assign it to students.'}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {schedules.map((sched) => {
-                    const assignedStudents = (sched.schedule_student || [])
-                      .map((rel: any) => students.find(s => s.id === rel.student_id)?.name)
-                      .filter(Boolean)
-
-                    return (
-                      <div 
-                        key={sched.id} 
-                        className="bg-white border border-black/10 rounded-2xl p-5 shadow-none hover:border-black/35 transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col justify-between"
-                      >
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between">
-                            <span className="px-2.5 py-1 bg-black border border-transparent text-white text-[10px] font-extrabold uppercase tracking-widest rounded-xl font-mono">
-                              {locale === 'id' ? DAYS_MAP[sched.day_of_week] : DAYS_MAP_EN[sched.day_of_week]}
-                            </span>
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => handleOpenShareModal(sched)}
-                                className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
-                                title={locale === 'id' ? 'Bagikan Portal' : 'Share Portal'}
-                              >
-                                <Share2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleOpenScheduleModal(sched)}
-                                className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteSchedule(sched.id)}
-                                className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1.5 text-black font-bold text-base font-mono">
-                              <Clock className="w-4 h-4 text-black" />
-                              {sched.start_time.substring(0, 5)} - {sched.end_time.substring(0, 5)}
-                            </div>
-                            {sched.label && <p className="text-xs text-neutral-555 font-medium">{sched.label}</p>}
-                          </div>
+            {filteredTeachers.length === 0 ? (
+              <div className="border border-dashed border-black/10 bg-white rounded-2xl p-16 text-center text-neutral-400 shadow-none">
+                <Users className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
+                <p className="font-bold text-black text-sm font-mono uppercase tracking-wider">
+                  {locale === 'id' ? 'Tidak Ada Pengajar Ditemukan' : 'No Teachers Found'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredTeachers.map((teacher) => (
+                  <div
+                    key={teacher.teacher_id}
+                    onClick={() => {
+                      setSelectedTeacher(teacher)
+                      setSearchQuery('')
+                    }}
+                    className="bg-white border border-black/10 rounded-2xl p-6 hover:border-black transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer shadow-none hover:shadow-md flex flex-col justify-between group relative overflow-hidden"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-12 h-12 rounded-xl bg-neutral-100 border border-black/10 flex items-center justify-center font-bold text-base text-black font-mono group-hover:bg-black group-hover:text-white transition-colors duration-350">
+                          {teacher.name.substring(0, 2).toUpperCase()}
                         </div>
-
-                        <div className="mt-5 pt-4 border-t border-black/15">
-                          <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-2 font-mono">
-                            {locale === 'id' ? 'Murid Terdaftar' : 'Assigned Students'} ({assignedStudents.length})
-                          </span>
-                          {assignedStudents.length === 0 ? (
-                            <span className="text-xs text-neutral-400 italic">
-                              {locale === 'id' ? 'Belum ada murid ditugaskan' : 'No students assigned yet'}
-                            </span>
-                          ) : (
-                            <div className="flex flex-wrap gap-1.5">
-                              {assignedStudents.map((name: string, i: number) => (
-                                <span 
-                                  key={i} 
-                                  className="px-2.5 py-1 bg-neutral-100 border border-black/5 text-black text-xs font-semibold rounded-lg font-mono uppercase"
-                                >
-                                  {name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold font-mono bg-neutral-100 text-black border border-black/10">
+                          {teacher.student_count} {locale === 'id' ? 'Murid' : 'Students'}
+                        </span>
                       </div>
-                    )
-                  })}
+
+                      <h3 className="font-bold text-lg text-black group-hover:text-neutral-900 tracking-tight line-clamp-1">
+                        {teacher.name}
+                      </h3>
+                      <p className="text-xs text-neutral-500 font-mono line-clamp-1 mt-1">
+                        {teacher.email}
+                      </p>
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t border-black/5 flex items-center justify-between text-xs font-bold font-mono uppercase tracking-wider text-neutral-600 group-hover:text-black">
+                      <span>{locale === 'id' ? 'Kelola Murid' : 'Manage Students'}</span>
+                      <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Back Navigation Bar for Admin */}
+            {isAdmin && selectedTeacher && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-neutral-50 border border-black/10 rounded-2xl p-3.5">
+                <button
+                  onClick={() => {
+                    setSelectedTeacher(null)
+                    setSearchQuery('')
+                  }}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-black/15 hover:bg-black hover:text-white text-black text-xs font-bold uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer group shadow-none"
+                >
+                  <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
+                  <span>{locale === 'id' ? 'Kembali ke Semua Guru' : 'Back to All Teachers'}</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-neutral-500 font-mono">{locale === 'id' ? 'Pengajar Terpilih:' : 'Selected Teacher:'}</span>
+                  <span className="text-xs font-bold text-black font-mono bg-white px-3 py-1.5 rounded-xl border border-black/10">
+                    {selectedTeacher.name} • {displayedStudents.length} {locale === 'id' ? 'Murid' : 'Students'}
+                  </span>
                 </div>
-              )}
+              </div>
+            )}
+
+            {/* Search Bar */}
+            <div className="relative max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <input
+                type="text"
+                placeholder={t('placeholder_search_student')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="form-input-premium pl-10 shadow-none"
+              />
             </div>
-          )}
-        </>
+
+            {filteredStudents.length === 0 ? (
+              <div className="border border-dashed border-black/10 bg-white rounded-2xl p-12 text-center text-neutral-400 shadow-none">
+                <Users className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
+                <p className="font-bold text-sm text-black font-mono uppercase tracking-wider">
+                  {locale === 'id' ? 'Belum Ada Data Murid' : 'No Student Data Yet'}
+                </p>
+                <p className="text-xs text-neutral-500 mt-1">
+                  {locale === 'id' 
+                    ? 'Silakan klik tombol Tambah Murid untuk mendaftarkan murid baru.' 
+                    : 'Please click the Add Student button to register a new student.'}
+                </p>
+              </div>
+            ) : (
+              <div className="bg-white border border-black/10 rounded-2xl overflow-hidden shadow-none">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-black/10 text-[10px] font-bold text-neutral-500 uppercase tracking-widest bg-neutral-50 font-mono">
+                      <th className="p-4">{t('label_student_name')}</th>
+                      <th className="p-4">{t('label_student_subject')}</th>
+                      <th className="p-4">{locale === 'id' ? 'Tanggal Mulai' : 'Start Date'}</th>
+                      <th className="p-4 text-center">{t('label_student_meet_count')}</th>
+                      <th className="p-4 text-right">{locale === 'id' ? 'Aksi' : 'Actions'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/5 text-sm text-neutral-700">
+                    {filteredStudents.map((s) => (
+                      <tr key={s.id} className="hover:bg-neutral-50/50 transition-colors duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]">
+                        <td className="p-4 font-bold text-black">{s.name}</td>
+                        <td className="p-4">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-100 border border-black/5 text-black text-xs font-semibold rounded-xl font-mono uppercase">
+                            <BookOpen className="w-3.5 h-3.5" />
+                            {s.subject}
+                          </span>
+                        </td>
+                        <td className="p-4 text-neutral-500 font-mono text-xs">{s.first_meeting_date || '-'}</td>
+                        <td className="p-4 text-center font-bold text-black font-mono">{s.meeting_count || 0}</td>
+                        <td className="p-4 text-right space-x-1.5">
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleOpenTransferModal(s)}
+                              className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
+                              title={locale === 'id' ? 'Pindahkan Murid ke Guru Lain' : 'Transfer Student to Another Teacher'}
+                            >
+                              <ArrowRightLeft className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleOpenStudentModal(s)}
+                            className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
+                            title={t('btn_edit')}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStudent(s.id)}
+                            className="text-neutral-400 hover:text-black p-1.5 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer font-bold"
+                            title={t('btn_delete')}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )
       )}
 
       {/* STUDENT MODAL */}
@@ -753,151 +615,13 @@ export default function StudentsAndSchedulesPage() {
         </div>
       )}
 
-      {/* SCHEDULE MODAL */}
-      {showScheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="w-full max-w-lg bg-white border border-black/10 rounded-2xl p-6 shadow-none relative">
-            <button 
-              onClick={() => setShowScheduleModal(false)}
-              className="absolute right-4 top-4 text-neutral-400 hover:text-black p-1 rounded-lg"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <h3 className="text-base font-bold text-black mb-6 uppercase tracking-wider font-mono">
-              {editingSchedule 
-                ? (locale === 'id' ? 'Edit Jadwal Belajar' : 'Edit Lesson Schedule') 
-                : (locale === 'id' ? 'Tambah Jadwal Baru' : 'Add New Schedule')}
-            </h3>
-
-            <form onSubmit={handleScheduleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
-                  {t('label_sched_day')}
-                </label>
-                <CustomSelect
-                  options={Object.entries(DAYS_MAP).map(([key, name]) => ({ value: key, label: locale === 'id' ? name : DAYS_MAP_EN[Number(key)] }))}
-                  value={String(schedDay)}
-                  onChange={(val) => setSchedDay(Number(val))}
-                  isSearchable={false}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
-                    {t('label_sched_start')}
-                  </label>
-                  <input
-                    type="time"
-                    required
-                    value={schedStart}
-                    onChange={(e) => setSchedStart(e.target.value)}
-                    className="form-input-premium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
-                    {t('label_sched_end')}
-                  </label>
-                  <input
-                    type="time"
-                    required
-                    value={schedEnd}
-                    onChange={(e) => setSchedEnd(e.target.value)}
-                    className="form-input-premium"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
-                  {t('label_sched_label')}
-                </label>
-                <input
-                  type="text"
-                  value={schedLabel}
-                  onChange={(e) => setSchedLabel(e.target.value)}
-                  placeholder="Contoh: Zoom Link, atau Google Meet"
-                  className="form-input-premium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
-                  {t('label_sched_students')}
-                </label>
-                <div className="relative mb-2">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
-                  <input
-                    type="text"
-                    placeholder={locale === 'id' ? 'Cari nama murid...' : 'Search student...'}
-                    value={schedStudentSearchQuery}
-                    onChange={(e) => setSchedStudentSearchQuery(e.target.value)}
-                    className="form-input-premium pl-9 py-1.5 text-xs shadow-none"
-                  />
-                </div>
-                <div className="border border-black/10 rounded-xl p-3 max-h-40 overflow-y-auto space-y-2 bg-neutral-50/50">
-                  {(() => {
-                    const filtered = students.filter(s =>
-                      s.name.toLowerCase().includes(schedStudentSearchQuery.toLowerCase()) ||
-                      s.subject.toLowerCase().includes(schedStudentSearchQuery.toLowerCase())
-                    )
-                    if (filtered.length === 0) {
-                      return (
-                        <p className="text-xs text-neutral-400 italic py-1 text-center">
-                          {locale === 'id' ? 'Tidak ada murid yang cocok' : 'No matching students'}
-                        </p>
-                      )
-                    }
-                    return filtered.map(s => {
-                      const isChecked = schedStudentIds.includes(s.id)
-                      return (
-                        <label key={s.id} className="flex items-center gap-2 text-xs font-semibold text-black cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleStudentSelection(s.id)}
-                            className="rounded text-black focus:ring-black h-4 w-4 border-black/15 accent-black"
-                          />
-                          <span>{s.name} ({s.subject})</span>
-                        </label>
-                      )
-                    })
-                  })()}
-                </div>
-              </div>
-
-              <div className="pt-4 flex justify-end gap-3 border-t border-black/10">
-                <button
-                  type="button"
-                  onClick={() => setShowScheduleModal(false)}
-                  className="bg-white border border-black/10 hover:bg-neutral-100 text-black font-semibold px-4 py-2.5 rounded-xl cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
-                >
-                  {t('btn_cancel')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="bg-black hover:bg-neutral-800 disabled:bg-neutral-200 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-none cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
-                >
-                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  <span>{t('btn_save_data')}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* SHARE PORTAL MODAL */}
       {showShareModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
           <div className="w-full max-w-lg bg-white border border-black/10 rounded-2xl p-6 shadow-none relative animate-scale-up">
             <button 
               onClick={() => setShowShareModal(false)}
-              className="absolute right-4 top-4 text-neutral-400 hover:text-black p-1 rounded-lg"
+              className="absolute right-4 top-4 text-neutral-400 hover:text-black p-1 rounded-lg cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -960,7 +684,104 @@ export default function StudentsAndSchedulesPage() {
           </div>
         </div>
       )}
+
+      {/* TRANSFER STUDENT MODAL */}
+      {transferModalStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+          <div className="w-full max-w-md bg-white border border-black/10 rounded-2xl p-6 shadow-xl relative animate-scale-up">
+            <button 
+              onClick={() => {
+                setTransferModalStudent(null)
+                setTargetTeacherId('')
+              }}
+              className="absolute right-4 top-4 text-neutral-400 hover:text-black p-1 rounded-lg transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="w-9 h-9 rounded-xl bg-neutral-100 border border-black/10 flex items-center justify-center text-black">
+                <ArrowRightLeft className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-black uppercase tracking-wider font-mono">
+                  {locale === 'id' ? 'Pindahkan Murid' : 'Transfer Student'}
+                </h3>
+                <p className="text-[11px] text-neutral-500 font-mono">
+                  {locale === 'id' ? 'Alihkan murid & riwayat ke guru lain' : 'Reassign student & history to another teacher'}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-neutral-50 border border-black/10 rounded-xl p-3.5 my-4 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-black font-mono">{transferModalStudent.name}</span>
+                <span className="text-[10px] uppercase font-bold font-mono px-2 py-0.5 bg-neutral-200 text-neutral-800 rounded">
+                  {transferModalStudent.subject}
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-500 font-mono">
+                {locale === 'id' ? 'Jumlah Pertemuan:' : 'Meeting Count:'} {transferModalStudent.meeting_count || 0}
+              </p>
+              <p className="text-[10px] text-neutral-400 leading-relaxed italic pt-1 border-t border-black/5">
+                {locale === 'id' 
+                  ? 'Catatan: Seluruh laporan pembelajaran terdahulu murid ini juga akan dipindahkan ke guru baru.'
+                  : 'Note: All previous lesson reports for this student will also be transferred to the new teacher.'}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                  {locale === 'id' ? 'Pilih Guru Tujuan' : 'Select Target Teacher'}
+                </label>
+                {teachersOverview.filter(t => t.teacher_id !== transferModalStudent.user_id).length === 0 ? (
+                  <div className="p-3 bg-neutral-100 border border-black/10 rounded-xl text-neutral-500 text-xs font-mono">
+                    {locale === 'id' 
+                      ? 'Tidak ada guru aktif lain yang tersedia untuk tujuan pemindahan.' 
+                      : 'No other active teachers available for transfer.'}
+                  </div>
+                ) : (
+                  <CustomSelect
+                    options={teachersOverview
+                      .filter(t => t.teacher_id !== transferModalStudent.user_id)
+                      .map(t => ({
+                        value: t.teacher_id,
+                        label: t.name
+                      }))}
+                    value={targetTeacherId}
+                    onChange={(val) => setTargetTeacherId(val)}
+                    placeholder={locale === 'id' ? 'Pilih nama guru...' : 'Select teacher name...'}
+                    isSearchable={true}
+                  />
+                )}
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3 border-t border-black/10">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTransferModalStudent(null)
+                    setTargetTeacherId('')
+                  }}
+                  className="bg-white border border-black/10 hover:bg-neutral-100 text-black font-semibold px-4 py-2.5 rounded-xl cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
+                >
+                  {t('btn_cancel')}
+                </button>
+                <button
+                  type="button"
+                  disabled={!targetTeacherId || transferring}
+                  onClick={handleConfirmTransfer}
+                  className="bg-black hover:bg-neutral-800 disabled:bg-neutral-200 text-white font-bold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-none cursor-pointer text-xs uppercase tracking-wider transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
+                >
+                  {transferring && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{locale === 'id' ? 'Konfirmasi Pindah' : 'Confirm Transfer'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-

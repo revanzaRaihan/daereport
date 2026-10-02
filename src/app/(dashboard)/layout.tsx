@@ -22,7 +22,8 @@ import {
   Sun,
   Moon,
   PenTool,
-  Inbox
+  Inbox,
+  Loader2
 } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
 
@@ -41,6 +42,8 @@ export default function DashboardLayout({
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   // KPI & Metric States
   const [totalStudents, setTotalStudents] = useState(0)
@@ -110,10 +113,27 @@ export default function DashboardLayout({
   }, [supabase])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.refresh()
-    router.push('/login')
+    setLoggingOut(true)
+    try {
+      await supabase.auth.signOut()
+      router.refresh()
+      router.push('/login')
+    } catch (err) {
+      console.error('Logout error:', err)
+      setLoggingOut(false)
+    }
   }
+
+  // Keyboard shortcut: close logout modal with Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showLogoutModal && !loggingOut) {
+        setShowLogoutModal(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showLogoutModal, loggingOut])
 
   const navItems = [
     { name: t('nav_create_report'), href: '/', icon: PenTool },
@@ -137,7 +157,7 @@ export default function DashboardLayout({
           <div className="w-8 h-8 text-text-primary flex items-center justify-center">
             <Logo className="w-6 h-6" />
           </div>
-          <span className="font-bold text-text-primary text-sm tracking-tight">Report Studio</span>
+          <span className="font-bold text-text-primary text-sm tracking-tight">Daely Report</span>
         </div>
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -163,8 +183,7 @@ export default function DashboardLayout({
                 <Logo className="w-8 h-8" />
               </div>
               <div>
-                <span className="font-extrabold text-text-primary text-base tracking-tight block leading-tight">Report Studio</span>
-                <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest block mt-0.5">{t('nav_role')} AI</span>
+                <span className="font-extrabold text-text-primary text-base tracking-tight block leading-tight">Daely Report</span>
               </div>
             </div>
 
@@ -179,19 +198,19 @@ export default function DashboardLayout({
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`
-                      flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]
+                      group flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
                       ${isActive 
-                        ? 'bg-primary text-background font-bold' 
-                         : 'text-text-secondary hover:text-text-primary hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent'}
+                        ? 'bg-accent text-white font-bold shadow-xs' 
+                        : 'text-text-secondary hover:text-accent hover:bg-accent/10 hover:border-accent/25 border border-transparent'}
                     `}
                   >
                     <div className="relative flex items-center justify-center shrink-0">
-                      <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-background' : 'text-text-secondary group-hover:text-text-primary'}`} />
+                      <Icon className={`w-[18px] h-[18px] transition-colors ${isActive ? 'text-white' : 'text-text-secondary group-hover:text-accent'}`} />
                       {item.href === '/inbox' && totalFeedbacks > 0 && (
                         <span className={`
                           absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full text-[8px] font-black font-mono leading-none border
                           ${isActive 
-                            ? 'bg-background text-primary border-primary' 
+                            ? 'bg-white text-accent border-accent' 
                             : 'bg-red-500 text-white border-card'}
                         `}>
                           {totalFeedbacks}
@@ -209,7 +228,7 @@ export default function DashboardLayout({
           <div className="p-4 border-t border-border-color space-y-3 bg-card">
             <div className="flex items-center justify-between p-3 bg-card border border-border-color rounded-xl shadow-none">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary text-background flex items-center justify-center text-xs font-bold font-mono">
+                <div className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center text-xs font-bold font-mono">
                   {userEmail ? getInitials(userEmail) : 'AI'}
                 </div>
                 <div className="min-w-0">
@@ -227,8 +246,8 @@ export default function DashboardLayout({
                   {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
                 <button 
-                  onClick={handleLogout}
-                  className="p-1.5 text-text-secondary hover:text-text-primary rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer"
+                  onClick={() => setShowLogoutModal(true)}
+                  className="p-1.5 text-text-secondary hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors duration-200 cursor-pointer"
                   title={t('nav_logout')}
                 >
                   <LogOut className="w-4 h-4" />
@@ -246,6 +265,74 @@ export default function DashboardLayout({
         </main>
 
       </div>
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {showLogoutModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+          onClick={() => {
+            if (!loggingOut) setShowLogoutModal(false)
+          }}
+        >
+          <div 
+            className="w-full max-w-sm bg-card border border-border-color rounded-2xl p-6 shadow-2xl relative animate-scale-up space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Close button */}
+            <button
+              onClick={() => setShowLogoutModal(false)}
+              disabled={loggingOut}
+              className="absolute top-4 right-4 text-text-secondary hover:text-text-primary p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer disabled:opacity-40"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Icon + Titles */}
+            <div className="flex flex-col items-center text-center pt-1">
+              <div className="w-12 h-12 rounded-full bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-3 ring-8 ring-rose-500/5">
+                <LogOut className="w-6 h-6 ml-0.5" />
+              </div>
+              <h3 className="text-base font-bold text-text-primary tracking-tight">
+                {t('modal_logout_title')}
+              </h3>
+              <p className="text-xs text-text-secondary mt-1.5 leading-relaxed max-w-[280px]">
+                {t('modal_logout_desc')}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="pt-2 flex gap-3 border-t border-border-color">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                disabled={loggingOut}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-border-color bg-input-bg hover:bg-black/5 dark:hover:bg-white/5 text-text-primary font-bold text-xs uppercase tracking-wider font-mono transition-colors cursor-pointer disabled:opacity-40"
+              >
+                {t('btn_cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-wider font-mono shadow-xs transition-all duration-200 cursor-pointer active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-1.5"
+              >
+                {loggingOut ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>{t('btn_logging_out')}</span>
+                  </>
+                ) : (
+                  <>
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>{t('btn_confirm_logout')}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

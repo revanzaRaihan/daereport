@@ -23,7 +23,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     }
 
     const cached = localStorage.getItem('app_theme')
-    const darkTheme = cached === 'dark' || (!cached && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    const darkTheme = cached === 'dark'
     if (darkTheme) {
       setIsDark(true)
       document.documentElement.classList.add('dark')

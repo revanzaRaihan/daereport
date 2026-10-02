@@ -154,14 +154,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   
   if (!data) {
     return {
-      title: 'Murid Tidak Ditemukan | DReport Studio',
+      title: 'Murid Tidak Ditemukan | Daely Report',
       description: 'Laporan belajar tidak ditemukan.'
     }
   }
 
   return {
-    title: `Laporan Progres Belajar ${data.student.name} | DReport Studio`,
-    description: `Pantau perkembangan belajar ${data.student.name} untuk program ${data.student.subject} di DReport Studio.`,
+    title: `Laporan Progres Belajar ${data.student.name} | Daely Report`,
+    description: `Pantau perkembangan belajar ${data.student.name} untuk program ${data.student.subject} di Daely Report.`,
     openGraph: {
       title: `Laporan Progres Belajar ${data.student.name}`,
       description: `Pantau riwayat progres, catatan guru, dan rekomendasi latihan untuk ${data.student.name}.`,

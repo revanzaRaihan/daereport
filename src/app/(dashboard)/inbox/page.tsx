@@ -31,22 +31,29 @@ export default function InboxPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data, error } = await supabase
+        const isAdmin = user.user_metadata?.role === 'admin' || user.email === 'admintdabalikpapan@timedoor.co.id'
+
+        let query = supabase
           .from('feedbacks')
           .select('*')
-          .eq('user_id', user.id)
           .order('created_at', { ascending: false })
+
+        if (!isAdmin) {
+          query = query.eq('user_id', user.id)
+        }
+
+        const { data, error } = await query
 
         if (error) throw error
         setFeedbacks(data || [])
 
         const unread = data?.filter((f: any) => !f.is_read) || []
         if (unread.length > 0) {
+          const unreadIds = unread.map((f: any) => f.id)
           await supabase
             .from('feedbacks')
             .update({ is_read: true })
-            .eq('user_id', user.id)
-            .eq('is_read', false)
+            .in('id', unreadIds)
         }
       }
     } catch (e: any) {

@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Daely Report (`dreport-studio-next`)
 
-## Getting Started
+Sistem otomasi laporan progres belajar murid berbasis AI untuk pengajar les privat dan kursus pemrograman, dilengkapi dengan portal orang tua publik interaktif.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Fitur Utama
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Pembuat Laporan AI & Manual**: Membuat draf laporan harian dengan gaya bahasa konsisten berbasis contoh dataset Anda menggunakan model Gemini / Groq.
+- **Portal Publik Orang Tua (`/p/[slug]`)**: Halaman transparan untuk wali murid melihat riwayat pertemuan, catatan progres belajar, proyek murid, serta mengirimkan masukan.
+- **Manajemen Murid & Jadwal**: Pendataan murid, mata pelajaran, jumlah pertemuan, jadwal les mingguan, dan integrasi WhatsApp.
+- **Riwayat Laporan & Paginasi Cerdas**: Manajemen arsip laporan dengan filter periode, pencarian teks, dan paginasi maksimal 5 laporan per tampilan.
+- **Kotak Masuk Masukan Ortu (`/inbox`)**: Pusat review dan tindak lanjut umpan balik dari orang tua murid.
+- **Dataset Gaya Bahasa**: Penyimpanan contoh format penulisan laporan dan rekomendasi latihan progresif agar AI beradaptasi dengan gaya guru.
+- **Desain Adaptif (Palet 70-20-10 & Dark Mode)**:
+  - 70% Background (`#FAF9F5` / `#262624`)
+  - 20% Card & Sidebar (`#F0EEE6` / `#30302E`)
+  - 10% Aksen Hijau (`#4da23c`)
+- **Dukungan Multibahasa**: Beralih instan antara Bahasa Indonesia (ID) dan English (EN).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Teknologi
 
-## Learn More
+- **Framework**: Next.js 16 (App Router), React 19, TypeScript 5
+- **Styling**: Tailwind CSS v4
+- **Database & Auth**: Supabase (PostgreSQL, Row Level Security, Storage, Auth)
+- **Kompresi Gambar**: Canvas-based client-side compression (zero external dependency)
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Menjalankan Proyek Secara Lokal
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Salin konfigurasi environment:
+   ```bash
+   cp .env.example .env.local # atau lengkapi NEXT_PUBLIC_SUPABASE_URL & NEXT_PUBLIC_SUPABASE_ANON_KEY
+   ```
 
-## Deploy on Vercel
+2. Jalankan server pengembangan:
+   ```bash
+   npm run dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. Buka [http://localhost:3000](http://localhost:3000) pada peramban Anda.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Dokumentasi & Backlog
+
+Catatan backlog pengembangan dan optimasi lanjutan tersimpan di [docs/WATCHLIST.md](file:///c:/Users/user/.gemini/antigravity/scratch/dreport-studio-next/docs/WATCHLIST.md).
