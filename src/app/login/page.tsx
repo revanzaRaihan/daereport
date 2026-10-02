@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import Logo from '@/components/Logo'
@@ -12,9 +12,44 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const err = params.get('error')
+      if (err === 'auth_callback_failed') {
+        setErrorMsg('Gagal melakukan autentikasi dengan Google. Silakan coba lagi.')
+      }
+    }
+  }, [])
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true)
+    setErrorMsg('')
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      })
+      if (error) {
+        setErrorMsg(error.message)
+        setGoogleLoading(false)
+      }
+    } catch (err: any) {
+      setErrorMsg('Gagal menghubungkan ke Google.')
+      setGoogleLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +67,7 @@ export default function LoginPage() {
         if (error) {
           setErrorMsg(error.message)
         } else if (data.user) {
-          setSuccessMsg(`Pendaftaran sukses! UUID akun Anda: ${data.user.id}. Silakan salin UUID ini untuk menjalankan script SQL migrasi (supabase_migration.sql) di Supabase SQL Editor agar data lama Anda terhubung.`)
+          setSuccessMsg(`Pendaftaran sukses untuk akun ${data.user.email}! Akun Anda sudah siap digunakan untuk masuk.`)
           // Clear inputs
           setEmail('')
           setPassword('')
@@ -88,6 +123,40 @@ export default function LoginPage() {
             {successMsg}
           </div>
         )}
+
+        {/* Google OAuth Button */}
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={loading || googleLoading}
+          className="w-full bg-white hover:bg-neutral-50 border border-black/15 text-neutral-800 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-3 cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98] text-sm shadow-none disabled:opacity-50 mb-5"
+        >
+          {googleLoading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin text-neutral-500" />
+              <span className="font-mono text-xs uppercase tracking-wider">Menghubungkan...</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.27 21.43 7.35 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.03 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.27 2.57 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+              </svg>
+              <span className="font-mono text-xs uppercase tracking-wider font-bold">Lanjutkan dengan Google</span>
+            </>
+          )}
+        </button>
+
+        {/* Divider */}
+        <div className="relative flex items-center justify-center mb-5">
+          <div className="border-t border-black/10 w-full"></div>
+          <span className="bg-white px-3 text-[10px] uppercase font-mono text-neutral-400 tracking-wider">
+            atau dengan email
+          </span>
+          <div className="border-t border-black/10 w-full"></div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>

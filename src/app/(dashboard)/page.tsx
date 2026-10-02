@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { syncPendingReports } from '@/lib/schedule/syncPendingReports'
 import CustomSelect from '@/components/CustomSelect'
 import CustomDatePicker from '@/components/CustomDatePicker'
 import { useTranslation } from '@/components/LocaleProvider'
@@ -36,7 +35,6 @@ export default function LaporanBuilderPage() {
   // Data States
   const [students, setStudents] = useState<any[]>([])
   const [datasetCount, setDatasetCount] = useState(0)
-  const [pendingReportsMap, setPendingReportsMap] = useState<Record<string, any[]>>({})
   
   // Form Inputs
   const [selectedStudentId, setSelectedStudentId] = useState('')
@@ -47,9 +45,6 @@ export default function LaporanBuilderPage() {
   const [language, setLanguage] = useState<'id' | 'en'>('id')
   const [reportType, setReportType] = useState<'full' | 'overview'>('full')
   const [mode, setMode] = useState<'ai' | 'manual'>('manual')
-  
-  // Pending Report ID tracker (if resolving a pending report)
-  const [selectedPendingId, setSelectedPendingId] = useState<string | null>(null)
 
   // AI Output & History Save States
   const [generatedText, setGeneratedText] = useState('')
@@ -73,21 +68,16 @@ export default function LaporanBuilderPage() {
       if (user) {
         setUserId(user.id)
         
-        // Sync pending reports
-        await syncPendingReports(supabase, user.id)
-
         // Fetch students & schedules
         const { data: studentsData } = await supabase
           .from('students')
           .select('*, schedules:schedule_student(schedule:schedules(*))')
-          .eq('user_id', user.id)
           .order('name')
 
         // Fetch dataset counts
         const { count } = await supabase
           .from('dataset_entries')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
 
         setDatasetCount(count || 0)
 
@@ -98,7 +88,6 @@ export default function LaporanBuilderPage() {
           const { data: reportsData } = await supabase
             .from('reports')
             .select('student_id, meeting_number, report_date')
-            .eq('user_id', user.id)
             .order('report_date', { ascending: false })
             .order('meeting_number', { ascending: false })
 
@@ -149,23 +138,6 @@ export default function LaporanBuilderPage() {
 
           setMeetingNumbersMap(meetNums)
           setNextDatesMap(nextDates)
-
-          // Fetch Pending Reports
-          const { data: pendingData } = await supabase
-            .from('pending_reports')
-            .select('*, student:students(*)')
-            .order('meeting_number', { ascending: true })
-
-          const filteredPending = pendingData?.filter(p => p.student?.user_id === user.id) || []
-          const groupedPending: Record<string, any[]> = {}
-          filteredPending.forEach(p => {
-            if (!groupedPending[p.student_id]) {
-              groupedPending[p.student_id] = []
-            }
-            groupedPending[p.student_id].push(p)
-          })
-
-          setPendingReportsMap(groupedPending)
         }
       }
     }
@@ -174,7 +146,6 @@ export default function LaporanBuilderPage() {
 
   const handleStudentChange = (id: string) => {
     setSelectedStudentId(id)
-    setSelectedPendingId(null)
     if (id) {
       setMeetingNumber(meetingNumbersMap[id] || 1)
       setReportDate(nextDatesMap[id] || '')
@@ -182,12 +153,6 @@ export default function LaporanBuilderPage() {
       setMeetingNumber(1)
       setReportDate('')
     }
-  }
-
-  const handleSelectPending = (p: any) => {
-    setSelectedPendingId(p.id)
-    setMeetingNumber(p.meeting_number)
-    setReportDate(p.report_date)
   }
 
   const handleGenerate = async (e: React.FormEvent) => {
@@ -295,17 +260,13 @@ export default function LaporanBuilderPage() {
         behavior,
         content: generatedText,
         image_url: imageUrl,
-        user_id: currentUserId,
+        user_id: student?.user_id || currentUserId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
 
       if (insertErr) {
         throw new Error(insertErr.message)
-      }
-
-      if (selectedPendingId) {
-        await supabase.from('pending_reports').delete().eq('id', selectedPendingId)
       }
 
       const { count: reportsCount } = await supabase
@@ -322,7 +283,6 @@ export default function LaporanBuilderPage() {
       setMateri('')
       setBehavior('')
       setGeneratedText('')
-      setSelectedPendingId(null)
       setSelectedImage(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
 
@@ -338,14 +298,6 @@ export default function LaporanBuilderPage() {
       nextDatesMap[selectedStudentId] = nextDateStr
       setReportDate(nextDateStr)
 
-      if (pendingReportsMap[selectedStudentId]) {
-        const filtered = pendingReportsMap[selectedStudentId].filter(p => p.id !== selectedPendingId)
-        setPendingReportsMap({
-          ...pendingReportsMap,
-          [selectedStudentId]: filtered
-        })
-      }
-
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err.message || 'Gagal menyimpan laporan.' })
     } finally {
@@ -353,11 +305,7 @@ export default function LaporanBuilderPage() {
     }
   }
 
-  const selectedStudentPending = selectedStudentId ? pendingReportsMap[selectedStudentId] || [] : []
   const currentStudent = students.find(s => s.id === selectedStudentId)
-  
-  // Calculate total pending reports for header counter
-  const totalPendingReportsCount = Object.values(pendingReportsMap).reduce((acc, curr) => acc + curr.length, 0)
 
   const studentOptions = students.map(s => ({ value: s.id, label: `${s.name} (${s.subject})` }))
 
@@ -799,10 +747,6 @@ export default function LaporanBuilderPage() {
       </div>
     </div>
   )
-}
-
-function escapeRegex(string: string) {
-  return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&')
 }
 
 function assembleManualReport(

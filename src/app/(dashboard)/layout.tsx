@@ -26,10 +26,6 @@ import {
 } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
 
-const DAYS_MAP: Record<number, string> = {
-  1: 'Senin', 2: 'Selasa', 3: 'Rabu', 4: 'Kamis', 5: 'Jumat', 6: 'Sabtu', 7: 'Minggu'
-}
-
 export default function DashboardLayout({
   children,
 }: {
@@ -58,21 +54,18 @@ export default function DashboardLayout({
       const { count: studentCount } = await supabase
         .from('students')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
       setTotalStudents(studentCount || 0)
 
       // 2. Total Reports
       const { count: reportCount } = await supabase
         .from('reports')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
       setTotalReports(reportCount || 0)
 
       // 3. Total Feedbacks
       const { count: feedbackCount } = await supabase
         .from('feedbacks')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
         .eq('is_read', false)
       setTotalFeedbacks(feedbackCount || 0)
 
@@ -81,7 +74,6 @@ export default function DashboardLayout({
       const { data: studentsData } = await supabase
         .from('students')
         .select('id, name, subject, meeting_count')
-        .eq('user_id', userId)
         .order('meeting_count', { ascending: false })
         .limit(4)
       setStudentProgressList(studentsData || [])

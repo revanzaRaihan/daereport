@@ -33,11 +33,12 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const isLoginPage = request.nextUrl.pathname === '/login'
+  const isAuthRoute = request.nextUrl.pathname.startsWith('/auth')
   const isApiRoute = request.nextUrl.pathname.startsWith('/api')
   const isStaticFile = request.nextUrl.pathname.match(/\.(png|jpg|jpeg|gif|svg|ico)$/)
   const isParentRoute = request.nextUrl.pathname.startsWith('/p/')
 
-  if (!user && !isLoginPage && !isApiRoute && !isStaticFile && !isParentRoute) {
+  if (!user && !isLoginPage && !isAuthRoute && !isApiRoute && !isStaticFile && !isParentRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

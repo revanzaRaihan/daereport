@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { Plus_Jakarta_Sans, Fredoka } from 'next/font/google'
 import { createClient } from '@/utils/supabase/server'
+import { slugify } from '@/lib/slug'
 import ParentDashboard, { ParsedReport } from './ParentDashboard'
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -17,18 +18,6 @@ const fredoka = Fredoka({
 
 interface PageProps {
   params: Promise<{ slug: string }>
-}
-
-function slugify(text: string): string {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')           // Replace spaces with -
-    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
-    .replace(/^-+/, '')             // Trim - from start of text
-    .replace(/-+$/, '')             // Trim - from end of text
 }
 
 function parseReportContent(content: string, materi: string) {

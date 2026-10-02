@@ -27,50 +27,10 @@ import {
   Clock
 } from 'lucide-react'
 
-function getRelativeTime(dateString: string, locale: 'id' | 'en'): string {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  
-  if (diffMs < 0) {
-    return locale === 'id' ? 'baru saja' : 'just now'
-  }
-  
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMs / 3600000)
-  const diffDays = Math.floor(diffMs / 86400000)
+import { getRelativeTime } from '@/lib/dateUtils'
+import { slugify } from '@/lib/slug'
 
-  if (locale === 'id') {
-    if (diffMins < 1) return 'baru saja'
-    if (diffMins < 60) return `${diffMins} menit yang lalu`
-    if (diffHours < 24) return `${diffHours} jam yang lalu`
-    if (diffDays === 1) return 'kemarin'
-    if (diffDays < 30) return `${diffDays} hari yang lalu`
-    const diffMonths = Math.floor(diffDays / 30)
-    return `${diffMonths} bulan yang lalu`
-  } else {
-    if (diffMins < 1) return 'just now'
-    if (diffMins < 60) return `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`
-    if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`
-    if (diffDays === 1) return 'yesterday'
-    if (diffDays < 30) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`
-    const diffMonths = Math.floor(diffDays / 30)
-    return `${diffMonths} ${diffMonths === 1 ? 'month' : 'months'} ago`
-  }
-}
-
-function getStudentSlug(studentName: string): string {
-  return studentName
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\-]+/g, '')
-    .replace(/\-\-+/g, '-')
-    .replace(/^-+/, '')
-    .replace(/-+$/, '')
-}
+const getStudentSlug = slugify
 
 export default function HistoryPage() {
   const supabase = createClient()
@@ -171,14 +131,12 @@ export default function HistoryPage() {
         const { data: studentsData } = await supabase
           .from('students')
           .select('id, name')
-          .eq('user_id', user.id)
         setStudents(studentsData || [])
 
         // Fetch history reports
         const { data: reportsData } = await supabase
           .from('reports')
           .select('*')
-          .eq('user_id', user.id)
           .order('created_at', { ascending: false })
         setReports(reportsData || [])
       }

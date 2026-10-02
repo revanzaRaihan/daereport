@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
       .from('students')
       .select('*')
       .eq('id', student_id)
-      .eq('user_id', user.id)
       .single()
 
     if (studentError || !student) {
@@ -60,7 +59,6 @@ export async function POST(request: NextRequest) {
     const { count, error: countError } = await supabase
       .from('dataset_entries')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
       .eq('language', language)
 
     if (countError || count === null || count === 0) {

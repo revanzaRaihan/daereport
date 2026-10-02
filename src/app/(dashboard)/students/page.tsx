@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { syncPendingReports } from '@/lib/schedule/syncPendingReports'
 import CustomSelect from '@/components/CustomSelect'
 import CustomDatePicker from '@/components/CustomDatePicker'
 import { useTranslation } from '@/components/LocaleProvider'
 import { useConfirm } from '@/components/ConfirmProvider'
+import { slugify } from '@/lib/slug'
 import { 
   Users, 
   Calendar, 
@@ -42,18 +42,6 @@ const DAYS_MAP_EN: Record<number, string> = {
   5: 'Friday',
   6: 'Saturday',
   7: 'Sunday'
-}
-
-function slugify(text: string): string {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')           // Replace spaces with -
-    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
-    .replace(/^-+/, '')             // Trim - from start of text
-    .replace(/-+$/, '')             // Trim - from end of text
 }
 
 export default function StudentsAndSchedulesPage() {
@@ -109,7 +97,6 @@ export default function StudentsAndSchedulesPage() {
         const { data: studentsData } = await supabase
           .from('students')
           .select('*')
-          .eq('user_id', user.id)
           .order('name')
         setStudents(studentsData || [])
 
@@ -117,7 +104,6 @@ export default function StudentsAndSchedulesPage() {
         const { data: schedulesData } = await supabase
           .from('schedules')
           .select('*, schedule_student(student_id)')
-          .eq('user_id', user.id)
           .order('day_of_week')
           .order('start_time')
         setSchedules(schedulesData || [])
@@ -335,11 +321,6 @@ export default function StudentsAndSchedulesPage() {
         }))
         const { error: relErr } = await supabase.from('schedule_student').insert(relations)
         if (relErr) throw relErr
-      }
-
-      // Sync pending reports
-      if (currentUserId) {
-        await syncPendingReports(supabase, currentUserId)
       }
 
       triggerToast('success', 'Jadwal belajar berhasil disimpan.')

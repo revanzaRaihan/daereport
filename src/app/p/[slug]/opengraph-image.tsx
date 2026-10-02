@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og'
+import { slugify } from '@/lib/slug'
 
 export const runtime = 'edge'
 export const alt = 'Laporan Perkembangan Murid'
@@ -8,8 +9,8 @@ export const size = {
 }
 export const contentType = 'image/png'
 
-export default async function Image({ params }: { params: { slug: string } }) {
-  const slug = params.slug
+export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
 
   let studentName = 'Student Progress'
   let subject = 'Learning Report'
@@ -31,17 +32,6 @@ export default async function Image({ params }: { params: { slug: string } }) {
 
       if (res.ok) {
         const students = await res.json()
-        const slugify = (text: string) => 
-          text
-            .toString()
-            .toLowerCase()
-            .trim()
-            .replace(/\s+/g, '-')
-            .replace(/[^\w\-]+/g, '')
-            .replace(/\-\-+/g, '-')
-            .replace(/^-+/, '')
-            .replace(/-+$/, '')
-
         const student = students.find((s: any) => slugify(s.name) === slug)
         if (student) {
           studentName = student.name
