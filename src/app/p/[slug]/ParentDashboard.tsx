@@ -22,6 +22,7 @@ import {
   Camera
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import { APP_CONFIG } from '@/lib/branding'
 
 export interface ParsedReport {
   id: string
@@ -131,7 +132,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
 
       if (supabaseError) throw supabaseError
 
-      const branchAdminEmail = process.env.NEXT_PUBLIC_BRANCH_ADMIN_EMAIL || 'admintdabalikpapan@timedoor.co.id'
+      const branchAdminEmail = process.env.NEXT_PUBLIC_BRANCH_ADMIN_EMAIL || 'admin@school.com'
       await fetch(`https://formsubmit.co/ajax/${branchAdminEmail}`, {
         method: 'POST',
         headers: {
@@ -142,7 +143,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
           student_name: student.name,
           subject: student.subject,
           feedback: feedbackText,
-          _subject: `[Daely Report] Masukan Orang Tua - ${student.name}`
+          _subject: `[${APP_CONFIG.name}] Masukan Orang Tua - ${student.name}`
         })
       })
 
@@ -851,7 +852,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
           {/* CARD FOOTER BRANDING */}
           <div className="bg-[#F8F9FA] px-6 py-4 border-t border-neutral-200/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-bold text-neutral-400">
             <span className="uppercase tracking-wider font-[var(--font-rounded,sans-serif)]">
-              &copy; 2026 Daely Report &bull; Portal Orang Tua
+              &copy; {new Date().getFullYear()} {APP_CONFIG.name} &bull; Portal Orang Tua
             </span>
             <span className="text-emerald-800 bg-emerald-100/70 px-3 py-1 rounded-full">
               Program: {student.subject}

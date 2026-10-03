@@ -1,0 +1,48 @@
+COMMERCIAL END-USER SOFTWARE LICENSE AGREEMENT (EULA)
+
+Copyright (c) 2026 Daely Report Studio. All Rights Reserved.
+
+IMPORTANT: PLEASE READ THIS SOFTWARE LICENSE AGREEMENT CAREFULLY BEFORE DOWNLOADING,
+INSTALLING, COPYING, OR USING THIS SOFTWARE.
+
+1. GRANT OF LICENSE
+Subject to the terms and conditions of this Agreement, the Licensor hereby grants to the Purchaser
+a non-exclusive, non-transferable, perpetual license to use, customize, modify, and deploy the
+Software source code and compiled binaries solely for the internal business operations of the Purchaser
+or for a single end-client commercial deployment.
+
+2. ALLOWED USES
+Under this License, you MAY:
+(a) Install and run the Software on self-hosted servers or cloud infrastructure (e.g., Vercel, Supabase, AWS, DigitalOcean).
+(b) Customize, rebrand (white-label), and modify the source code to suit your institutional or business requirements.
+(c) Create and maintain backup copies of the source code solely for archival and disaster recovery purposes.
+(d) Deploy the Software for internal school, course, academy, or tutoring management operations.
+
+3. RESTRICTIONS
+Under this License, you MUST NOT:
+(a) Resell, redistribute, sublicense, lease, rent, or publish the source code (in whole or in part), whether modified or unmodified, to any third party.
+(b) Distribute, share, or upload the source code to public repositories, marketplace platforms, or file-sharing websites.
+(c) Release or re-license the Software or any derivative work under an open-source license (such as MIT, GPL, Apache, or BSD).
+(d) Sell access to the unmodified source code as a competing development boilerplate or starter kit product.
+
+4. INTELLECTUAL PROPERTY & OWNERSHIP
+The Software, including all code, algorithms, design systems, workflows, and documentation, is the
+intellectual property of the Licensor. This Agreement grants a license to use the Software, not an
+ownership transfer of the underlying copyright or intellectual property.
+
+5. TERMINATION
+This License is effective until terminated. Your rights under this License will terminate automatically
+without notice if you fail to comply with any of its terms. Upon termination, you must cease all use
+of the Software and destroy all copies of the source code in your possession.
+
+6. DISCLAIMER OF WARRANTIES
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+7. LIMITATION OF LIABILITY
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR
+ANY INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING LOSS OF PROFITS,
+DATA, OR BUSINESS INTERRUPTION) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE.

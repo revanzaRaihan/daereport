@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { buildAiPrompt } from '@/lib/ai/promptBuilder'
 import { classifyCategory, generateReportSections, assembleReport, ReportSections } from '@/lib/ai/generator'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +15,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Unauthorized access.' }, { status: 401 })
     }
 
-    // 2. Parse request body
+    // 2. Rate limiting check (max 10 requests per user per minute)
+    const rateLimit = checkRateLimit(`ai_gen_${user.id}`, { limit: 10, windowMs: 60_000 })
+    if (!rateLimit.success) {
+      const retrySeconds = Math.ceil(rateLimit.resetMs / 1000)
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Terlalu banyak permintaan pembuatan laporan. Silakan tunggu ${retrySeconds} detik sebelum mencoba lagi.`
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(retrySeconds),
+            'X-RateLimit-Limit': String(rateLimit.limit),
+            'X-RateLimit-Remaining': String(rateLimit.remaining)
+          }
+        }
+      )
+    }
+
+    // 3. Parse and validate request body
     const body = await request.json()
     const {
       student_id,
@@ -29,7 +51,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Missing required parameters.' }, { status: 422 })
     }
 
-    // 3. Fetch student details
+    // Input length validation (anti-bloat & anti prompt injection guard)
+    const trimmedBehavior = String(behavior).trim()
+    if (trimmedBehavior.length < 5) {
+      return NextResponse.json({
+        success: false,
+        message: 'Deskripsi observasi siswa terlalu singkat (minimal 5 karakter).'
+      }, { status: 422 })
+    }
+
+    if (trimmedBehavior.length > 2500) {
+      return NextResponse.json({
+        success: false,
+        message: 'Deskripsi observasi siswa melebihi batas maksimal 2.500 karakter.'
+      }, { status: 422 })
+    }
+
+    if (String(materi).length > 500) {
+      return NextResponse.json({
+        success: false,
+        message: 'Deskripsi materi melebihi batas maksimal 500 karakter.'
+      }, { status: 422 })
+    }
+
+    // 4. Fetch student details
     const { data: student, error: studentError } = await supabase
       .from('students')
       .select('*')
@@ -40,20 +85,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Student not found.' }, { status: 404 })
     }
 
-    // 4. Fetch settings
-    const { data: settingsData } = await supabase.from('app_settings').select('key, value')
-    const settings = new Map(settingsData?.map(s => [s.key, s.value]) || [])
+    // 5. Fetch settings
+    // Secure retrieval: First priority is server environment variables (AI_API_KEY).
+    // If not in env, fetch from app_settings via server-side admin client (bypassing RLS).
+    let provider = process.env.AI_PROVIDER
+    let apiKey = process.env.AI_API_KEY
+    let model = process.env.AI_MODEL
 
-    const provider = settings.get('ai_provider') || process.env.AI_PROVIDER || 'gemini'
-    const apiKey = settings.get('ai_api_key') || process.env.AI_API_KEY
-    const model = settings.get('ai_model') || (provider === 'gemini' ? 'gemini-2.5-flash' : 'llama-3.1-8b-instant') // default models
+    if (!apiKey) {
+      const adminClient = createAdminClient()
+      const dbClient = adminClient || supabase
+      const { data: settingsData } = await dbClient.from('app_settings').select('key, value')
+      const settings = new Map(settingsData?.map(s => [s.key, s.value]) || [])
+
+      provider = provider || settings.get('ai_provider') || 'gemini'
+      apiKey = settings.get('ai_api_key') || undefined
+      model = model || settings.get('ai_model') || (provider === 'gemini' ? 'gemini-2.5-flash' : 'llama-3.1-8b-instant')
+    } else {
+      provider = provider || 'gemini'
+      model = model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'llama-3.1-8b-instant')
+    }
 
     if (!apiKey) {
       return NextResponse.json({
         success: false,
-        message: 'API Key AI belum dikonfigurasi di Pengaturan.'
+        message: 'API Key AI belum dikonfigurasi di Pengaturan atau Environment Server.'
       }, { status: 400 })
     }
+
+    const activeProvider: string = provider || 'gemini'
+    const activeApiKey: string = apiKey
+    const activeModel: string = model || (activeProvider === 'gemini' ? 'gemini-2.5-flash' : 'llama-3.1-8b-instant')
 
     // 5. Check if at least one dataset entry exists for the selected language
     const { count, error: countError } = await supabase
@@ -70,7 +132,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Classify Student Behavior
-    const category = await classifyCategory(behavior, materi, provider, apiKey, model)
+    const category = await classifyCategory(behavior, materi, activeProvider, activeApiKey, activeModel)
 
     // 7. Generate report sections with retries (max 2 attempts)
     const maxAttempts = 2
@@ -92,7 +154,7 @@ export async function POST(request: NextRequest) {
           language
         })
 
-        reportSections = await generateReportSections(prompt, provider, apiKey, model)
+        reportSections = await generateReportSections(prompt, activeProvider, activeApiKey, activeModel)
 
         // Validate structure and basic length constraints
         if (

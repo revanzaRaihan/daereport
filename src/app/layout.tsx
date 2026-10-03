@@ -7,6 +7,8 @@ import LenisProvider from "@/components/LenisProvider";
 import ConfirmProvider from "@/components/ConfirmProvider";
 import NavigationProgressProvider from "@/components/NavigationProgress";
 
+import { APP_CONFIG } from "@/lib/branding";
+
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
@@ -18,12 +20,12 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Daely Report",
-  description: "Dashboard laporan progres murid dengan AI",
+  title: APP_CONFIG.name,
+  description: APP_CONFIG.description,
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: APP_CONFIG.logoPath,
+    shortcut: APP_CONFIG.logoPath,
+    apple: APP_CONFIG.logoPath,
   },
 };
 

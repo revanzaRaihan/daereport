@@ -30,7 +30,7 @@ export async function prefetchRouteData(pathname: string, supabase: SupabaseClie
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const isAdmin = user.user_metadata?.role === 'admin' || user.email === 'admintdabalikpapan@timedoor.co.id'
+    const isAdmin = user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin'
 
     if (pathname === '/students') {
       const tasks = [

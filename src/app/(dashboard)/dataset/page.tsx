@@ -6,6 +6,7 @@ import CustomSelect from '@/components/CustomSelect'
 import { useTranslation } from '@/components/LocaleProvider'
 import { useConfirm } from '@/components/ConfirmProvider'
 import { getCachedData, setCachedData } from '@/lib/dataCache'
+import { STARTER_STYLES, STARTER_RECOMMENDATIONS } from '@/lib/starterDatasets'
 import { 
   BookOpen, 
   Plus, 
@@ -66,6 +67,46 @@ export default function DatasetPage() {
   const [recLang, setRecLang] = useState<'id' | 'en'>('id')
   const [recCategory, setRecCategory] = useState<'kreativitas' | 'logika_terstruktur' | 'eksperimen' | 'coding_dasar'>('coding_dasar')
   const [recBody, setRecBody] = useState('')
+  const [loadingStarterKit, setLoadingStarterKit] = useState(false)
+
+  const handleLoadStarterKit = async () => {
+    setLoadingStarterKit(true)
+    try {
+      let currentUserId = userId
+      if (!currentUserId) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          currentUserId = user.id
+          setUserId(user.id)
+        }
+      }
+
+      if (!currentUserId) {
+        throw new Error(locale === 'id' ? 'Sesi berakhir, silakan login kembali.' : 'Session expired, please login again.')
+      }
+
+      const stylesToInsert = STARTER_STYLES.map(s => ({
+        ...s,
+        user_id: currentUserId
+      }))
+      const { error: sErr } = await supabase.from('dataset_entries').insert(stylesToInsert)
+      if (sErr) throw sErr
+
+      const recsToInsert = STARTER_RECOMMENDATIONS.map(r => ({
+        ...r,
+        user_id: currentUserId
+      }))
+      const { error: rErr } = await supabase.from('recommendation_datasets').insert(recsToInsert)
+      if (rErr) throw rErr
+
+      triggerToast('success', locale === 'id' ? 'Paket contoh bawaan (Starter Kit) berhasil dimuat!' : 'Starter kit successfully loaded!')
+      fetchData()
+    } catch (err: any) {
+      triggerToast('error', err.message || 'Gagal memuat paket contoh bawaan.')
+    } finally {
+      setLoadingStarterKit(false)
+    }
+  }
 
   const fetchData = async () => {
     if (!styles.length && !recommendations.length) {
@@ -277,24 +318,38 @@ export default function DatasetPage() {
           </span>
         </div>
 
-        {/* Tab Selection */}
-        <div className="bg-neutral-100 border border-black/5 p-1 rounded-xl flex gap-1 text-xs font-semibold">
-          <button
-            onClick={() => setActiveTab('styles')}
-            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-              activeTab === 'styles' ? 'bg-black text-white font-bold' : 'text-neutral-500 hover:text-black'
-            }`}
-          >
-            {locale === 'id' ? 'Gaya Laporan' : 'Report Style'}
-          </button>
-          <button
-            onClick={() => setActiveTab('recommendations')}
-            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-              activeTab === 'recommendations' ? 'bg-black text-white font-bold' : 'text-neutral-500 hover:text-black'
-            }`}
-          >
-            {t('tab_recs')}
-          </button>
+        {/* Tab Selection & Starter Kit Button */}
+        <div className="flex items-center gap-2">
+          {(styles.length === 0 || recommendations.length === 0) && (
+            <button
+              onClick={handleLoadStarterKit}
+              disabled={loadingStarterKit}
+              className="px-3 py-1.5 bg-neutral-900 text-white hover:bg-neutral-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+              title={locale === 'id' ? 'Muat contoh penulisan & rekomendasi bawaan' : 'Load default writing styles and recommendations'}
+            >
+              {loadingStarterKit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              <span>{locale === 'id' ? 'Muat Starter Kit' : 'Load Starter Kit'}</span>
+            </button>
+          )}
+
+          <div className="bg-neutral-100 border border-black/5 p-1 rounded-xl flex gap-1 text-xs font-semibold">
+            <button
+              onClick={() => setActiveTab('styles')}
+              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                activeTab === 'styles' ? 'bg-black text-white font-bold' : 'text-neutral-500 hover:text-black'
+              }`}
+            >
+              {locale === 'id' ? 'Gaya Laporan' : 'Report Style'}
+            </button>
+            <button
+              onClick={() => setActiveTab('recommendations')}
+              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                activeTab === 'recommendations' ? 'bg-black text-white font-bold' : 'text-neutral-500 hover:text-black'
+              }`}
+            >
+              {t('tab_recs')}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -515,16 +570,26 @@ export default function DatasetPage() {
             {/* Content List */}
             {activeTab === 'styles' ? (
               filteredStyles.length === 0 ? (
-                <div className="border border-dashed border-black/10 rounded-2xl p-12 text-center text-neutral-400">
-                  <Eye className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
-                  <p className="font-bold text-black text-sm font-mono uppercase tracking-wider">
-                    {locale === 'id' ? 'Tidak Ada Contoh Gaya Ditemukan' : 'No Style Examples Found'}
-                  </p>
-                  <p className="text-xs text-neutral-500 mt-1">
-                    {locale === 'id' 
-                      ? 'Gunakan form di sebelah kiri untuk menambahkan contoh baru.' 
-                      : 'Use the form on the left to add a new example.'}
-                  </p>
+                <div className="border border-dashed border-black/10 rounded-2xl p-12 text-center text-neutral-400 space-y-3">
+                  <Eye className="w-8 h-8 text-neutral-300 mx-auto" />
+                  <div>
+                    <p className="font-bold text-black text-sm font-mono uppercase tracking-wider">
+                      {locale === 'id' ? 'Tidak Ada Contoh Gaya Ditemukan' : 'No Style Examples Found'}
+                    </p>
+                    <p className="text-xs text-neutral-500 mt-1">
+                      {locale === 'id' 
+                        ? 'Gunakan form di sebelah kiri atau muat paket contoh bawaan.' 
+                        : 'Use the form on the left or load the starter kit.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleLoadStarterKit}
+                    disabled={loadingStarterKit}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 text-white hover:bg-neutral-800 text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {loadingStarterKit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                    <span>{locale === 'id' ? 'Muat Paket Contoh Bawaan' : 'Load Starter Kit'}</span>
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
@@ -554,16 +619,26 @@ export default function DatasetPage() {
               )
             ) : (
               filteredRecs.length === 0 ? (
-                <div className="border border-dashed border-black/10 rounded-2xl p-12 text-center text-neutral-400">
-                  <Eye className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
-                  <p className="font-bold text-black text-sm font-mono uppercase tracking-wider">
-                    {locale === 'id' ? 'Tidak Ada Rekomendasi Ditemukan' : 'No Recommendations Found'}
-                  </p>
-                  <p className="text-xs text-neutral-550 mt-1">
-                    {locale === 'id' 
-                      ? 'Gunakan form di sebelah kiri untuk menambahkan rekomendasi baru.' 
-                      : 'Use the form on the left to add a new recommendation.'}
-                  </p>
+                <div className="border border-dashed border-black/10 rounded-2xl p-12 text-center text-neutral-400 space-y-3">
+                  <Eye className="w-8 h-8 text-neutral-300 mx-auto" />
+                  <div>
+                    <p className="font-bold text-black text-sm font-mono uppercase tracking-wider">
+                      {locale === 'id' ? 'Tidak Ada Rekomendasi Ditemukan' : 'No Recommendations Found'}
+                    </p>
+                    <p className="text-xs text-neutral-550 mt-1">
+                      {locale === 'id' 
+                        ? 'Gunakan form di sebelah kiri atau muat paket rekomendasi bawaan.' 
+                        : 'Use the form on the left or load the starter kit.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleLoadStarterKit}
+                    disabled={loadingStarterKit}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 text-white hover:bg-neutral-800 text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {loadingStarterKit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                    <span>{locale === 'id' ? 'Muat Paket Contoh Bawaan' : 'Load Starter Kit'}</span>
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">

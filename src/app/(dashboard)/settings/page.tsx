@@ -67,7 +67,7 @@ export default function SettingsPage() {
       if (user) {
         setCurrentUserId(user.id)
         setUserEmail(user.email || '')
-        setIsAdmin(user.email === 'admintdabalikpapan@timedoor.co.id')
+        setIsAdmin(user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin')
       }
 
       // 2. Fetch system stats

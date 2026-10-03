@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import Logo from '@/components/Logo'
+import { APP_CONFIG } from '@/lib/branding'
 import { useTranslation } from '@/components/LocaleProvider'
 import { useNavigationProgress } from '@/components/NavigationProgress'
 import { prefetchRouteData } from '@/lib/dataCache'
@@ -163,7 +164,7 @@ export default function DashboardLayout({
           <div className="w-8 h-8 text-text-primary flex items-center justify-center">
             <Logo className="w-6 h-6" />
           </div>
-          <span className="font-bold text-text-primary text-sm tracking-tight">Daely Report</span>
+          <span className="font-bold text-text-primary text-sm tracking-tight">{APP_CONFIG.name}</span>
         </div>
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -192,7 +193,7 @@ export default function DashboardLayout({
                 <Logo className="w-8 h-8" />
               </div>
               <div>
-                <span className="font-extrabold text-text-primary text-base tracking-tight block leading-tight">Daely Report</span>
+                <span className="font-extrabold text-text-primary text-base tracking-tight block leading-tight">{APP_CONFIG.name}</span>
               </div>
             </div>
 

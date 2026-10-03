@@ -3,6 +3,7 @@ import { Metadata } from 'next'
 import { Plus_Jakarta_Sans, Fredoka } from 'next/font/google'
 import { createClient } from '@/utils/supabase/server'
 import { slugify } from '@/lib/slug'
+import { APP_CONFIG } from '@/lib/branding'
 import ParentDashboard, { ParsedReport } from './ParentDashboard'
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -101,27 +102,36 @@ function parseReportContent(content: string, materi: string) {
 async function getStudentAndReports(slug: string) {
   const supabase = await createClient()
 
-  // 1. Fetch all students (needed because we filter by slug in JS to avoid complex postgres slug logic)
-  const { data: students, error: studentError } = await supabase
+  // 1. Fetch targeted student directly by slug (specific columns only to prevent data leakage)
+  let { data: student, error: studentError } = await supabase
     .from('students')
-    .select('*')
+    .select('id, name, subject, meeting_count, user_id, slug')
+    .eq('slug', slug)
+    .maybeSingle()
 
-  if (studentError || !students) {
-    return null
-  }
-
-  const student = students.find(s => slugify(s.name) === slug)
+  // Graceful fallback: match by slug or slugified name if direct slug match is not found
   if (!student) {
+    const { data: fallbackStudents } = await supabase
+      .from('students')
+      .select('id, name, subject, meeting_count, user_id, slug')
+    student = fallbackStudents?.find(s => (s.slug === slug || slugify(s.name) === slug)) || null
+  }
+
+  if (studentError || !student) {
     return null
   }
 
-  // 2. Fetch all reports for this student
+  // 2. Fetch all reports for this student with specific columns
   const { data: reports, error: reportsError } = await supabase
     .from('reports')
-    .select('*')
+    .select('id, meeting_number, report_date, materi, behavior, content, image_url')
     .eq('student_id', student.id)
     .order('report_date', { ascending: false })
     .order('meeting_number', { ascending: false })
+
+  if (reportsError) {
+    return null
+  }
 
   const parsedReports: ParsedReport[] = (reports || []).map(r => {
     const parsed = parseReportContent(r.content, r.materi)
@@ -154,14 +164,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   
   if (!data) {
     return {
-      title: 'Murid Tidak Ditemukan | Daely Report',
+      title: `Murid Tidak Ditemukan | ${APP_CONFIG.name}`,
       description: 'Laporan belajar tidak ditemukan.'
     }
   }
 
   return {
-    title: `Laporan Progres Belajar ${data.student.name} | Daely Report`,
-    description: `Pantau perkembangan belajar ${data.student.name} untuk program ${data.student.subject} di Daely Report.`,
+    title: `Laporan Progres Belajar ${data.student.name} | ${APP_CONFIG.name}`,
+    description: `Pantau perkembangan belajar ${data.student.name} untuk program ${data.student.subject} di ${APP_CONFIG.name}.`,
     openGraph: {
       title: `Laporan Progres Belajar ${data.student.name}`,
       description: `Pantau riwayat progres, catatan guru, dan rekomendasi latihan untuk ${data.student.name}.`,

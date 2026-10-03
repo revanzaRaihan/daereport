@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import Logo from '@/components/Logo'
+import { APP_CONFIG } from '@/lib/branding'
 import { Mail, Lock, Eye, EyeOff, Loader2, Sun, Moon, ArrowRight, Languages } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
 import { useTranslation } from '@/components/LocaleProvider'
@@ -154,7 +155,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <span className="font-extrabold text-white text-base tracking-tight block leading-tight">
-                  Daely Report
+                  {APP_CONFIG.name}
                 </span>
               </div>
             </div>
@@ -191,7 +192,7 @@ export default function LoginPage() {
             </div>
             <div>
               <span className="font-extrabold text-text-primary text-base tracking-tight block">
-                Daely Report
+                {APP_CONFIG.name}
               </span>
             </div>
           </div>
@@ -345,7 +346,7 @@ export default function LoginPage() {
           {/* Footer note */}
           <div className="mt-6 pt-4 border-t border-border-color/60 text-center">
             <span className="text-[10px] text-text-secondary font-mono uppercase tracking-wider">
-              &copy; 2026 Daely Report
+              &copy; {new Date().getFullYear()} {APP_CONFIG.name}
             </span>
           </div>
         </div>

@@ -21,8 +21,10 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     if (supabaseUrl && supabaseKey) {
-      // Fetch all students to match slug (using standard fetch for Edge runtime compatibility)
-      const res = await fetch(`${supabaseUrl}/rest/v1/students?select=*`, {
+      // Fetch targeted student directly by slug with exact needed columns
+      let student: any = null
+
+      const res = await fetch(`${supabaseUrl}/rest/v1/students?slug=eq.${encodeURIComponent(slug)}&select=id,name,subject,meeting_count,slug&limit=1`, {
         headers: {
           apikey: supabaseKey,
           Authorization: `Bearer ${supabaseKey}`,
@@ -31,26 +33,44 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       })
 
       if (res.ok) {
-        const students = await res.json()
-        const student = students.find((s: any) => slugify(s.name) === slug)
-        if (student) {
-          studentName = student.name
-          subject = student.subject
-          
-          // Fetch actual count of reports for this student
-          const countRes = await fetch(`${supabaseUrl}/rest/v1/reports?student_id=eq.${student.id}&select=id`, {
-            headers: {
-              apikey: supabaseKey,
-              Authorization: `Bearer ${supabaseKey}`,
-            },
-            next: { revalidate: 60 }
-          })
-          if (countRes.ok) {
-            const reportsData = await countRes.json()
-            totalMeetings = reportsData.length
-          } else {
-            totalMeetings = student.meeting_count || 0
-          }
+        const rows = await res.json()
+        if (rows && rows.length > 0) {
+          student = rows[0]
+        }
+      }
+
+      // Fallback only if direct slug match was not found
+      if (!student) {
+        const fallbackRes = await fetch(`${supabaseUrl}/rest/v1/students?select=id,name,subject,meeting_count,slug`, {
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+          next: { revalidate: 60 }
+        })
+        if (fallbackRes.ok) {
+          const fallbackStudents = await fallbackRes.json()
+          student = fallbackStudents.find((s: any) => s.slug === slug || slugify(s.name) === slug)
+        }
+      }
+
+      if (student) {
+        studentName = student.name
+        subject = student.subject
+        
+        // Fetch actual count of reports for this student
+        const countRes = await fetch(`${supabaseUrl}/rest/v1/reports?student_id=eq.${student.id}&select=id`, {
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+          next: { revalidate: 60 }
+        })
+        if (countRes.ok) {
+          const reportsData = await countRes.json()
+          totalMeetings = reportsData.length
+        } else {
+          totalMeetings = student.meeting_count || 0
         }
       }
     }

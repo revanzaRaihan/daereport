@@ -10,36 +10,66 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# testing & coverage
 /coverage
 
-# next.js
+# next.js & build output
 /.next/
 /out/
+/build/
 
-# production
-/build
-
-# misc
+# misc & OS
 .DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 *.pem
+*.key
+*.cert
+*.crt
 
-# debug
+# ide & editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# logs & debug
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# environment files (whitelist .env.example for public onboarding)
 .env*
+!.env.example
 
-# vercel
+# vercel deployment artifacts
 .vercel
 
-# typescript
+# typescript cache & type declarations
 *.tsbuildinfo
 next-env.d.ts
 
-# documentation & database assets
-/docs
-/supabase
+# local database temporary files, dumps & backups
+/supabase/.temp/
+/supabase/backups/
+/supabase/.branches/
+*.dump
+*.sql.bak
+
+# internal audit, developer review, and planning markdown files
+/docs/AUDIT_*.md
+/docs/RENEWAL_*.md
+/docs/*_AUDIT*.md
+/docs/*_REVIEW*.md
+/docs/PRIORITY_*.md
+/docs/WATCHLIST*.md
+/docs/internal/
+*codebase_review*
+*.scratch.*
+/scratch/

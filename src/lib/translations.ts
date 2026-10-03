@@ -25,7 +25,7 @@ export const translations = {
     btn_save_data: "Simpan Data",
     confirm_title: "Konfirmasi",
     modal_logout_title: "Konfirmasi Keluar",
-    modal_logout_desc: "Apakah Anda yakin ingin keluar dari akun Daely Report? Anda perlu masuk kembali untuk mengakses dashboard.",
+    modal_logout_desc: "Apakah Anda yakin ingin keluar dari akun? Anda perlu masuk kembali untuk mengakses dashboard.",
     btn_confirm_logout: "Ya, Keluar",
     btn_logging_out: "Keluar...",
 
@@ -213,7 +213,7 @@ export const translations = {
     btn_save_data: "Save Data",
     confirm_title: "Confirmation",
     modal_logout_title: "Confirm Logout",
-    modal_logout_desc: "Are you sure you want to log out of Daely Report? You will need to log in again to access the dashboard.",
+    modal_logout_desc: "Are you sure you want to log out of your account? You will need to log in again to access the dashboard.",
     btn_confirm_logout: "Yes, Log Out",
     btn_logging_out: "Logging out...",
 

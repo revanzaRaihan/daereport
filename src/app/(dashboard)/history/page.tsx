@@ -215,7 +215,7 @@ export default function HistoryPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUserId(user.id)
-        const userIsAdmin = user.user_metadata?.role === 'admin' || user.email === 'admintdabalikpapan@timedoor.co.id'
+        const userIsAdmin = user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin'
         setIsAdmin(userIsAdmin)
 
         if (userIsAdmin) {
@@ -520,15 +520,16 @@ export default function HistoryPage() {
   }> = {}
 
   filteredReports.forEach(r => {
-    if (!groupedReports[r.student_id]) {
-      groupedReports[r.student_id] = {
-        studentId: r.student_id,
+    const groupKey = r.student_id || `student_${r.student_name}`
+    if (!groupedReports[groupKey]) {
+      groupedReports[groupKey] = {
+        studentId: r.student_id || '',
         studentName: r.student_name,
         subject: r.subject,
         reports: []
       }
     }
-    groupedReports[r.student_id].reports.push(r)
+    groupedReports[groupKey].reports.push(r)
   })
 
   const groupedList = Object.values(groupedReports)
