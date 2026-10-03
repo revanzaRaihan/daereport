@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import CustomSelect from '@/components/CustomSelect'
 import { useTranslation } from '@/components/LocaleProvider'
+import { getCachedData, setCachedData } from '@/lib/dataCache'
 import { 
-  Settings, 
   Save, 
   Loader2, 
   Check, 
@@ -15,26 +15,42 @@ import {
   EyeOff, 
   Key,
   Smartphone,
-  Languages
+  Languages,
+  User,
+  ShieldCheck,
+  FileText,
+  Users
 } from 'lucide-react'
 
 export default function SettingsPage() {
   const supabase = createClient()
   const { t, locale: currentLocale, setLocale: updateGlobalLocale } = useTranslation()
 
+  const cachedSettings = getCachedData<Record<string, string>>('app_settings')
+  const cachedStudentCount = getCachedData<number>('settings_student_count')
+  const cachedReportCount = getCachedData<number>('settings_report_count')
+
   // Loaders & Alert states
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cachedSettings)
   const [saving, setSaving] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
 
+  // Personalized Teacher Profile states
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [teacherName, setTeacherName] = useState(() => cachedSettings?.teacher_name || '')
+  const [userEmail, setUserEmail] = useState('')
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [studentCount, setStudentCount] = useState<number | null>(cachedStudentCount ?? null)
+  const [reportCount, setReportCount] = useState<number | null>(cachedReportCount ?? null)
+
   // Settings form states
-  const [provider, setProvider] = useState('gemini')
-  const [model, setModel] = useState('gemini-2.5-flash')
+  const [provider, setProvider] = useState(() => cachedSettings?.ai_provider || 'gemini')
+  const [model, setModel] = useState(() => cachedSettings?.ai_model || 'gemini-2.5-flash')
   const [apiKey, setApiKey] = useState('')
   const [maskedKey, setMaskedKey] = useState('')
-  const [waNumber, setWaNumber] = useState('')
-  const [locale, setLocale] = useState('id')
+  const [waNumber, setWaNumber] = useState(() => cachedSettings?.admin_wa_number || '')
+  const [locale, setLocale] = useState(() => cachedSettings?.app_locale || 'id')
 
   // UI States
   const [showKey, setShowKey] = useState(false)
@@ -42,8 +58,27 @@ export default function SettingsPage() {
 
   // Fetch Settings
   const fetchSettings = async () => {
-    setLoading(true)
+    if (!cachedSettings) {
+      setLoading(true)
+    }
     try {
+      // 1. Fetch authenticated user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setCurrentUserId(user.id)
+        setUserEmail(user.email || '')
+        setIsAdmin(user.email === 'admintdabalikpapan@timedoor.co.id')
+      }
+
+      // 2. Fetch system stats
+      const [{ count: sCount }, { count: rCount }] = await Promise.all([
+        supabase.from('students').select('*', { count: 'exact', head: true }),
+        supabase.from('reports').select('*', { count: 'exact', head: true })
+      ])
+      setStudentCount(sCount ?? 0)
+      setReportCount(rCount ?? 0)
+
+      // 3. Fetch app_settings
       const { data } = await supabase.from('app_settings').select('key, value')
       if (data) {
         const settingsMap = new Map(data.map(item => [item.key, item.value]))
@@ -54,10 +89,21 @@ export default function SettingsPage() {
         const wa = settingsMap.get('admin_wa_number') || ''
         const loc = settingsMap.get('app_locale') || 'id'
 
+        // Account-personalized teacher name:
+        // Priority 1: Auth user_metadata
+        // Priority 2: Account specific key in app_settings (teacher_name_{userId})
+        // Priority 3: Global fallback in app_settings (teacher_name)
+        const userTeacherName = 
+          user?.user_metadata?.teacher_name || 
+          user?.user_metadata?.display_name || 
+          (user ? settingsMap.get(`teacher_name_${user.id}`) : '') || 
+          settingsMap.get('teacher_name') || ''
+
         setProvider(prov)
         setModel(md)
         setWaNumber(wa)
         setLocale(loc)
+        setTeacherName(userTeacherName)
 
         // Setup masked key
         if (keyVal) {
@@ -71,6 +117,12 @@ export default function SettingsPage() {
           setMaskedKey('')
         }
         setKeyModified(false)
+
+        const mapObj: Record<string, string> = {}
+        data.forEach(item => { mapObj[item.key] = item.value })
+        setCachedData('app_settings', mapObj)
+        setCachedData('settings_student_count', sCount ?? 0)
+        setCachedData('settings_report_count', rCount ?? 0)
       }
     } catch (e) {
       console.error(e)
@@ -113,6 +165,13 @@ export default function SettingsPage() {
         { key: 'app_locale', value: locale }
       ]
 
+      // Account-personalized teacher name storage
+      if (currentUserId) {
+        upserts.push({ key: `teacher_name_${currentUserId}`, value: teacherName.trim() })
+      }
+      // Also update base teacher_name for admin/general visibility
+      upserts.push({ key: 'teacher_name', value: teacherName.trim() })
+
       // Only upsert API Key if it's been edited and doesn't contain asterisks (which would be the masked placeholder)
       if (keyModified && !apiKey.includes('*')) {
         upserts.push({ key: 'ai_api_key', value: apiKey.trim() })
@@ -123,6 +182,14 @@ export default function SettingsPage() {
 
       const { error } = await supabase.from('app_settings').upsert(upserts)
       if (error) throw error
+
+      // Also persist teacher's name directly in Supabase auth user_metadata for this account
+      await supabase.auth.updateUser({
+        data: {
+          teacher_name: teacherName.trim(),
+          display_name: teacherName.trim()
+        }
+      })
 
       await updateGlobalLocale(locale as 'id' | 'en')
       triggerToast('success', t('msg_settings_saved'))
@@ -158,7 +225,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-5xl w-full">
       {/* Primary Content Header (Height: 64px, flex items-center justify-between) */}
       <div className="h-16 flex items-center justify-between border-b border-black/10 pb-4">
         <div className="flex items-center gap-3">
@@ -187,136 +254,212 @@ export default function SettingsPage() {
           <Loader2 className="w-6 h-6 text-black animate-spin" />
         </div>
       ) : (
-        <form onSubmit={handleSave} className="bg-white border border-black/10 rounded-2xl p-6 space-y-6 shadow-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/30">
+        <form onSubmit={handleSave} className="space-y-6">
           
-          {/* AI Settings Section */}
-          <div className="space-y-4">
-            <h3 className="text-xs font-bold text-black uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-black/10 font-mono">
-              <Sparkles className="w-4 h-4" />
-              {t('settings_sec_ai')}
-            </h3>
+          {/* HORIZONTAL 2-COLUMN WIDE GRID */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            
+            {/* COLUMN 1: Profile & System */}
+            <div className="space-y-6">
+              
+              {/* Minimal Teacher Profile Card */}
+              <div className="bg-white border border-black/10 rounded-2xl p-5 space-y-4 shadow-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/30">
+                <div className="flex items-center justify-between pb-3 border-b border-black/10">
+                  <h3 className="text-xs font-bold text-black uppercase tracking-widest flex items-center gap-1.5 font-mono">
+                    <User className="w-4 h-4 text-[#4da23c]" />
+                    {t('settings_sec_profile')}
+                  </h3>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#4da23c]/10 text-[#4da23c] border border-[#4da23c]/20">
+                    {isAdmin ? t('role_branch_admin') : t('role_teacher')}
+                  </span>
+                </div>
 
-            {/* Provider Select */}
-            <div>
-              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
-                {t('label_provider')}
-              </label>
-              <CustomSelect
-                options={[
-                  { value: 'gemini', label: 'Google Gemini AI' },
-                  { value: 'groq', label: 'Groq Cloud API' }
-                ]}
-                value={provider}
-                onChange={handleProviderChange}
-                isSearchable={false}
-              />
-            </div>
+                {/* Minimal Account Identity Strip */}
+                <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-neutral-50 border border-black/5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#4da23c]/15 text-[#4da23c] border border-[#4da23c]/30 flex items-center justify-center font-bold text-sm font-mono shrink-0">
+                      {teacherName ? teacherName.trim().slice(0, 2).toUpperCase() : (userEmail ? userEmail.slice(0, 2).toUpperCase() : 'DR')}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-xs text-black truncate">
+                          {teacherName || (currentLocale === 'id' ? 'Pengajar' : 'Instructor')}
+                        </span>
+                        <ShieldCheck className="w-3.5 h-3.5 text-[#4da23c] shrink-0" />
+                      </div>
+                      <p className="text-[11px] font-mono text-neutral-500 truncate">
+                        {userEmail || '—'}
+                      </p>
+                    </div>
+                  </div>
 
-            {/* Model Select */}
-            <div>
-              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
-                {t('label_model')}
-              </label>
-              <CustomSelect
-                options={modelOptions}
-                value={model}
-                onChange={(val) => setModel(val)}
-                isSearchable={false}
-              />
-            </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="px-2.5 py-1 rounded-lg bg-white border border-black/10 flex items-center gap-1.5" title={t('stat_students_count')}>
+                      <Users className="w-3 h-3 text-[#4da23c]" />
+                      <span className="text-xs font-mono font-bold text-black">{studentCount ?? 0}</span>
+                    </div>
+                    <div className="px-2.5 py-1 rounded-lg bg-white border border-black/10 flex items-center gap-1.5" title={t('stat_reports_count')}>
+                      <FileText className="w-3 h-3 text-[#4da23c]" />
+                      <span className="text-xs font-mono font-bold text-black">{reportCount ?? 0}</span>
+                    </div>
+                  </div>
+                </div>
 
-            {/* API Key Input */}
-            <div>
-              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5 font-mono">
-                <Key className="w-3.5 h-3.5 text-neutral-400" />
-                API Key
-              </label>
-              <div className="relative">
-                <input
-                  type={showKey ? 'text' : 'password'}
-                  value={apiKey}
-                  onChange={(e) => handleKeyChange(e.target.value)}
-                  placeholder={provider === 'gemini' ? 'AIzaSy...' : 'gsk_...'}
-                  className="form-input-premium pr-12 font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black p-1"
-                >
-                  {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+                {/* Teacher Display Name Input */}
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5 font-mono">
+                    <User className="w-3.5 h-3.5 text-neutral-400" />
+                    {t('label_teacher_name')}
+                  </label>
+                  <input
+                    type="text"
+                    value={teacherName}
+                    onChange={(e) => setTeacherName(e.target.value)}
+                    placeholder={t('placeholder_teacher_name')}
+                    className="form-input-premium"
+                  />
+                  <p className="text-[10px] text-neutral-500 mt-1.5 leading-relaxed font-medium">
+                    {currentLocale === 'id' 
+                      ? 'Nama pengajar yang tersimpan untuk akun Anda dan dapat dilihat oleh admin cabang.' 
+                      : 'Teacher display name stored for your account and visible to the branch admin.'}
+                  </p>
+                </div>
               </div>
-              <p className="text-[10px] text-neutral-550 mt-1.5 leading-relaxed font-medium">
-                {currentLocale === 'id' 
-                  ? 'Kredensial API Key ini disimpan aman di database server Supabase Anda dan tidak pernah dipublikasikan keluar.' 
-                  : 'This API Key is stored securely in your Supabase database and is never exposed publicly.'}
-              </p>
+
+              {/* System & Contacts Section */}
+              <div className="bg-white border border-black/10 rounded-2xl p-5 space-y-4 shadow-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/30">
+                <h3 className="text-xs font-bold text-black uppercase tracking-widest flex items-center gap-1.5 pb-3 border-b border-black/10 font-mono">
+                  <Languages className="w-4 h-4 text-[#4da23c]" />
+                  {t('settings_sec_system')}
+                </h3>
+
+                {/* Locale */}
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                    {t('label_locale')}
+                  </label>
+                  <CustomSelect
+                    options={[
+                      { value: 'id', label: currentLocale === 'id' ? 'Bahasa Indonesia' : 'Indonesian' },
+                      { value: 'en', label: 'English' }
+                    ]}
+                    value={locale}
+                    onChange={(val) => setLocale(val)}
+                    isSearchable={false}
+                  />
+                </div>
+
+                {/* WA Number */}
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5 font-mono">
+                    <Smartphone className="w-3.5 h-3.5 text-neutral-400" />
+                    {t('label_wa')}
+                  </label>
+                  <input
+                    type="text"
+                    value={waNumber}
+                    onChange={(e) => setWaNumber(e.target.value)}
+                    placeholder="Contoh: 628123456789"
+                    className="form-input-premium"
+                  />
+                  <p className="text-[10px] text-neutral-500 mt-1.5 font-medium">
+                    {currentLocale === 'id'
+                      ? 'Nomor WhatsApp untuk pengiriman salinan laporan progres murid.'
+                      : 'WhatsApp number for sending student progress report copies.'}
+                  </p>
+                </div>
+              </div>
+
             </div>
+
+            {/* COLUMN 2: AI Credentials */}
+            <div className="bg-white border border-black/10 rounded-2xl p-5 space-y-4 shadow-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-black/30">
+              <h3 className="text-xs font-bold text-black uppercase tracking-widest flex items-center gap-1.5 pb-3 border-b border-black/10 font-mono">
+                <Sparkles className="w-4 h-4 text-[#4da23c]" />
+                {t('settings_sec_ai')}
+              </h3>
+
+              {/* Provider Select */}
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                  {t('label_provider')}
+                </label>
+                <CustomSelect
+                  options={[
+                    { value: 'gemini', label: 'Google Gemini AI' },
+                    { value: 'groq', label: 'Groq Cloud API' }
+                  ]}
+                  value={provider}
+                  onChange={handleProviderChange}
+                  isSearchable={false}
+                />
+              </div>
+
+              {/* Model Select */}
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
+                  {t('label_model')}
+                </label>
+                <CustomSelect
+                  options={modelOptions}
+                  value={model}
+                  onChange={(val) => setModel(val)}
+                  isSearchable={false}
+                />
+              </div>
+
+              {/* API Key Input */}
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5 font-mono">
+                  <Key className="w-3.5 h-3.5 text-neutral-400" />
+                  API Key
+                </label>
+                <div className="relative">
+                  <input
+                    type={showKey ? 'text' : 'password'}
+                    value={apiKey}
+                    onChange={(e) => handleKeyChange(e.target.value)}
+                    placeholder={provider === 'gemini' ? 'AIzaSy...' : 'gsk_...'}
+                    className="form-input-premium pr-12 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black p-1"
+                  >
+                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-neutral-500 mt-1.5 leading-relaxed font-medium">
+                  {currentLocale === 'id' 
+                    ? 'Kredensial API Key ini disimpan aman di database server Supabase Anda dan tidak pernah dipublikasikan keluar.' 
+                    : 'This API Key is stored securely in your Supabase database and is never exposed publicly.'}
+                </p>
+              </div>
+            </div>
+
           </div>
 
-          {/* System settings Section */}
-          <div className="space-y-4 pt-4">
-            <h3 className="text-xs font-bold text-black uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-black/10 font-mono">
-              <Languages className="w-4 h-4" />
-              {t('settings_sec_system')}
-            </h3>
-
-            {/* Locale */}
-            <div>
-              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
-                {t('label_locale')}
-              </label>
-              <CustomSelect
-                options={[
-                  { value: 'id', label: currentLocale === 'id' ? 'Bahasa Indonesia' : 'Indonesian' },
-                  { value: 'en', label: 'English' }
-                ]}
-                value={locale}
-                onChange={(val) => setLocale(val)}
-                isSearchable={false}
-              />
-            </div>
-
-            {/* WA Number */}
-            <div>
-              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5 font-mono">
-                <Smartphone className="w-3.5 h-3.5 text-neutral-400" />
-                {t('label_wa')}
-              </label>
-              <input
-                type="text"
-                value={waNumber}
-                onChange={(e) => setWaNumber(e.target.value)}
-                placeholder="Contoh: 628123456789"
-                className="form-input-premium"
-              />
-              <p className="text-[10px] text-neutral-555 mt-1.5 font-medium">
-                {currentLocale === 'id'
-                  ? 'Nomor ini digunakan untuk mengirimkan salinan laporan progres murid langsung via WA.'
-                  : 'This number is used to send student progress report copies directly via WhatsApp.'}
-              </p>
-            </div>
+          {/* Action Bar (Full width button or right aligned) */}
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full sm:w-auto sm:min-w-[200px] bg-black hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 text-white text-xs font-bold uppercase tracking-wider py-3.5 px-6 rounded-xl shadow-none flex items-center justify-center gap-2 cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{currentLocale === 'id' ? 'Menyimpan Pengaturan...' : 'Saving Settings...'}</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>{currentLocale === 'id' ? 'Simpan Pengaturan' : 'Save Settings'}</span>
+                </>
+              )}
+            </button>
           </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full bg-black hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 text-white text-xs font-bold uppercase tracking-wider py-3.5 rounded-xl shadow-none flex items-center justify-center gap-2 cursor-pointer transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] font-mono"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>{currentLocale === 'id' ? 'Menyimpan Pengaturan...' : 'Saving Settings...'}</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>{currentLocale === 'id' ? 'Simpan Pengaturan' : 'Save Settings'}</span>
-              </>
-            )}
-          </button>
 
         </form>
       )}

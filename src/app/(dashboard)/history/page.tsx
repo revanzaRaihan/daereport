@@ -6,6 +6,7 @@ import { compressImage } from '@/lib/imageCompressor'
 import CustomSelect from '@/components/CustomSelect'
 import { useTranslation } from '@/components/LocaleProvider'
 import { useConfirm } from '@/components/ConfirmProvider'
+import { getCachedData, setCachedData } from '@/lib/dataCache'
 import {
   History,
   Search,
@@ -41,16 +42,20 @@ export default function HistoryPage() {
   const { confirm } = useConfirm()
   const [userId, setUserId] = useState<string | null>(null)
 
+  const cachedReports = getCachedData<any[]>('history_reports')
+  const cachedStudents = getCachedData<any[]>('history_students')
+  const cachedOverview = getCachedData<any[]>('history_teachers_overview')
+
   // Admin & Teacher View States
   const [isAdmin, setIsAdmin] = useState(false)
-  const [teachersOverview, setTeachersOverview] = useState<any[]>([])
+  const [teachersOverview, setTeachersOverview] = useState<any[]>(cachedOverview || [])
   const [selectedTeacher, setSelectedTeacher] = useState<any | null>(null)
   const [teacherSearchQuery, setTeacherSearchQuery] = useState('')
 
   // Data States
-  const [reports, setReports] = useState<any[]>([])
-  const [students, setStudents] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [reports, setReports] = useState<any[]>(cachedReports || [])
+  const [students, setStudents] = useState<any[]>(cachedStudents || [])
+  const [loading, setLoading] = useState(!cachedReports && !cachedOverview)
 
   // Period Filter State (Default: 'this_week')
   const [selectedPeriod, setSelectedPeriod] = useState<'this_week' | 'this_month' | 'last_month' | 'all_time'>('this_week')
@@ -133,14 +138,19 @@ export default function HistoryPage() {
 
   // Core Data Fetcher for a given teacher and period
   const fetchReportsForTarget = async (targetTeacherId: string, period = selectedPeriod) => {
-    setLoading(true)
+    if (!reports.length) {
+      setLoading(true)
+    }
     try {
       const { data: studentsData } = await supabase
         .from('students')
         .select('id, name, slug')
         .eq('user_id', targetTeacherId)
         .is('deleted_at', null)
-      setStudents(studentsData || [])
+      if (studentsData) {
+        setStudents(studentsData)
+        setCachedData('history_students', studentsData)
+      }
 
       // Lightweight initial query: excludes heavy content & behavior columns
       let query = supabase
@@ -161,7 +171,10 @@ export default function HistoryPage() {
         .order('report_date', { ascending: false })
         .order('meeting_number', { ascending: false })
 
-      setReports(reportsData || [])
+      if (reportsData) {
+        setReports(reportsData)
+        setCachedData('history_reports', reportsData)
+      }
     } catch (e) {
       console.error(e)
     } finally {
@@ -195,7 +208,9 @@ export default function HistoryPage() {
   }
 
   const fetchData = async () => {
-    setLoading(true)
+    if (!reports.length && !teachersOverview.length) {
+      setLoading(true)
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
@@ -208,6 +223,7 @@ export default function HistoryPage() {
           const { data: overview } = await supabase.rpc('get_history_teachers_overview')
           if (overview) {
             setTeachersOverview(overview)
+            setCachedData('history_teachers_overview', overview)
           }
           setReports([])
           setStudents([])
@@ -958,7 +974,7 @@ export default function HistoryPage() {
                                             {getRelativeTime(report.report_date || report.created_at, locale)}
                                           </span>
                                           <p className="text-xs text-neutral-700 font-semibold truncate max-w-xs md:max-w-md hidden sm:block">
-                                            {report.materi}
+                                            {report.behavior || report.materi || (locale === 'id' ? `Pertemuan #${report.meeting_number}` : `Meeting #${report.meeting_number}`)}
                                           </p>
                                         </div>
 
@@ -1025,12 +1041,12 @@ export default function HistoryPage() {
                                         </div>
                                       </div>
 
-                                      {/* Mobile-only materi preview row */}
+                                      {/* Mobile-only observation preview row */}
                                       <p className="text-xs text-neutral-700 font-semibold block sm:hidden cursor-pointer" onClick={() => toggleReportExpand(report.id)}>
                                         <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-0.5 font-mono">
-                                          {locale === 'id' ? 'Topik:' : 'Topic:'}
+                                          {locale === 'id' ? 'Catatan/Observasi:' : 'Note/Observation:'}
                                         </span>
-                                        {report.materi}
+                                        {report.behavior || report.materi || `${report.subject} - Meet ${report.meeting_number}`}
                                       </p>
 
                                       {/* Expanded Details Box (Two-Stage Lazy Loaded) */}
@@ -1167,18 +1183,7 @@ export default function HistoryPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">
-                  {locale === 'id' ? 'Topik/Materi' : 'Topic/Material'}
-                </label>
-                <textarea
-                  required
-                  rows={2}
-                  value={editMateri}
-                  onChange={(e) => setEditMateri(e.target.value)}
-                  className="form-textarea-premium"
-                />
-              </div>
+
 
               <div>
                 <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">

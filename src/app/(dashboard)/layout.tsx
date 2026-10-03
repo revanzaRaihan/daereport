@@ -6,6 +6,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import Logo from '@/components/Logo'
 import { useTranslation } from '@/components/LocaleProvider'
+import { useNavigationProgress } from '@/components/NavigationProgress'
+import { prefetchRouteData } from '@/lib/dataCache'
 import { 
   Users, 
   BookOpen, 
@@ -37,6 +39,7 @@ export default function DashboardLayout({
   const supabase = createClient()
   const { t } = useTranslation()
   const { isDark, toggleTheme } = useTheme()
+  const { navigate } = useNavigationProgress()
   
   // Auth & UI States
   const [userEmail, setUserEmail] = useState<string | null>(null)
@@ -153,7 +156,10 @@ export default function DashboardLayout({
       
       {/* Mobile Top Bar */}
       <header className="md:hidden bg-card border-b border-border-color px-4 py-3 flex items-center justify-between z-30 h-14 shrink-0">
-        <div className="flex items-center gap-2">
+        <div 
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 cursor-pointer select-none"
+        >
           <div className="w-8 h-8 text-text-primary flex items-center justify-center">
             <Logo className="w-6 h-6" />
           </div>
@@ -161,7 +167,7 @@ export default function DashboardLayout({
         </div>
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-1.5 text-text-secondary hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg"
+          className="p-1.5 text-text-secondary hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg cursor-pointer"
         >
           {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -178,7 +184,10 @@ export default function DashboardLayout({
         `}>
           <div className="flex flex-col flex-1 overflow-y-auto">
             {/* Top Section: Logo & Tagline */}
-            <div className="p-6 border-b border-border-color flex items-center gap-3 shrink-0">
+            <div 
+              onClick={() => navigate('/')}
+              className="p-6 border-b border-border-color flex items-center gap-3 shrink-0 cursor-pointer select-none"
+            >
               <div className="w-10 h-10 text-text-primary flex items-center justify-center">
                 <Logo className="w-8 h-8" />
               </div>
@@ -193,12 +202,19 @@ export default function DashboardLayout({
                 const isActive = pathname === item.href
                 const Icon = item.icon
                 return (
-                  <Link
+                  <a
                     key={item.name}
                     href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setMobileMenuOpen(false)
+                      navigate(item.href)
+                    }}
+                    onMouseEnter={() => {
+                      prefetchRouteData(item.href, supabase)
+                    }}
                     className={`
-                      group flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                      group flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer
                       ${isActive 
                         ? 'bg-accent text-white font-bold shadow-xs' 
                         : 'text-text-secondary hover:text-accent hover:bg-accent/10 hover:border-accent/25 border border-transparent'}
@@ -218,7 +234,7 @@ export default function DashboardLayout({
                       )}
                     </div>
                     <span>{item.name}</span>
-                  </Link>
+                  </a>
                 )
               })}
             </nav>

@@ -6,6 +6,7 @@ import CustomSelect from '@/components/CustomSelect'
 import CustomDatePicker from '@/components/CustomDatePicker'
 import { useTranslation } from '@/components/LocaleProvider'
 import { useConfirm } from '@/components/ConfirmProvider'
+import { getCachedData, setCachedData } from '@/lib/dataCache'
 import { slugify } from '@/lib/slug'
 import { 
   Users, 
@@ -30,16 +31,20 @@ export default function StudentsPage() {
   const { confirm } = useConfirm()
   const [userId, setUserId] = useState<string | null>(null)
 
+  const cachedStudents = getCachedData<any[]>('students')
+  const cachedOverview = getCachedData<any[]>('teachers_overview')
+  const cachedAllTeachers = getCachedData<any[]>('all_teachers')
+
   // Loaders & Errors
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cachedStudents)
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
   // Multi-User & Admin States
   const [isAdmin, setIsAdmin] = useState(false)
-  const [teachersOverview, setTeachersOverview] = useState<any[]>([])
-  const [allTeachers, setAllTeachers] = useState<any[]>([])
+  const [teachersOverview, setTeachersOverview] = useState<any[]>(cachedOverview || [])
+  const [allTeachers, setAllTeachers] = useState<any[]>(cachedAllTeachers || [])
   const [selectedTeacher, setSelectedTeacher] = useState<any | null>(null)
   const [teacherSearchQuery, setTeacherSearchQuery] = useState('')
 
@@ -49,7 +54,7 @@ export default function StudentsPage() {
   const [transferring, setTransferring] = useState(false)
 
   // Students Data States
-  const [students, setStudents] = useState<any[]>([])
+  const [students, setStudents] = useState<any[]>(cachedStudents || [])
   const [showStudentModal, setShowStudentModal] = useState(false)
   const [editingStudent, setEditingStudent] = useState<any | null>(null)
   const [studentName, setStudentName] = useState('')
@@ -65,7 +70,9 @@ export default function StudentsPage() {
 
   // --- FETCH DATA ---
   const fetchData = async () => {
-    setLoading(true)
+    if (!students.length) {
+      setLoading(true)
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -79,18 +86,23 @@ export default function StudentsPage() {
         .from('students')
         .select('*')
         .order('name')
-      setStudents(studentsData || [])
+      if (studentsData) {
+        setStudents(studentsData)
+        setCachedData('students', studentsData)
+      }
 
       // 2. If Admin, fetch teacher overview & all registered teachers for transfer
       if (userIsAdmin) {
         const { data: overview } = await supabase.rpc('get_teachers_overview')
         if (overview) {
           setTeachersOverview(overview)
+          setCachedData('teachers_overview', overview)
         }
 
         const { data: teachersList } = await supabase.rpc('get_all_teachers')
         if (teachersList) {
           setAllTeachers(teachersList)
+          setCachedData('all_teachers', teachersList)
         }
       }
     } catch (err: any) {

@@ -19,13 +19,13 @@ export async function POST(request: NextRequest) {
       student_id,
       meeting_number,
       report_date,
-      materi,
+      materi = '',
       behavior,
       language = 'id',
       report_type = 'full'
     } = body
 
-    if (!student_id || !meeting_number || !report_date || !materi || !behavior) {
+    if (!student_id || !meeting_number || !report_date || !behavior) {
       return NextResponse.json({ success: false, message: 'Missing required parameters.' }, { status: 422 })
     }
 

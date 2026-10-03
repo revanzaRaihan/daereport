@@ -5,13 +5,15 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import Logo from '@/components/Logo'
-import { Mail, Lock, Eye, EyeOff, Loader2, Sun, Moon, ArrowRight, Check } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, Loader2, Sun, Moon, ArrowRight, Languages } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
+import { useTranslation } from '@/components/LocaleProvider'
 
 export default function LoginPage() {
   const router = useRouter()
   const supabase = createClient()
   const { isDark, toggleTheme } = useTheme()
+  const { t, locale, setLocale } = useTranslation()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -28,10 +30,10 @@ export default function LoginPage() {
       const params = new URLSearchParams(window.location.search)
       const err = params.get('error')
       if (err === 'auth_callback_failed') {
-        setErrorMsg('Gagal melakukan autentikasi dengan Google. Silakan coba lagi.')
+        setErrorMsg(t('login_err_google_auth'))
       }
     }
-  }, [])
+  }, [t])
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true)
@@ -52,7 +54,7 @@ export default function LoginPage() {
         setGoogleLoading(false)
       }
     } catch {
-      setErrorMsg('Gagal menghubungkan ke Google.')
+      setErrorMsg(t('login_err_google_connect'))
       setGoogleLoading(false)
     }
   }
@@ -73,7 +75,7 @@ export default function LoginPage() {
         if (error) {
           setErrorMsg(error.message)
         } else if (data.user) {
-          setSuccessMsg(`Pendaftaran sukses untuk akun ${data.user.email}! Akun Anda sudah siap digunakan untuk masuk.`)
+          setSuccessMsg(`${t('login_success_signup_prefix')} ${data.user.email}! ${t('login_success_signup_suffix')}`)
           setEmail('')
           setPassword('')
           setIsSignUp(false)
@@ -87,7 +89,7 @@ export default function LoginPage() {
         if (error) {
           setErrorMsg(
             error.message === 'Invalid login credentials'
-              ? 'Email atau password salah. Pastikan Anda sudah mendaftar terlebih dahulu.'
+              ? t('login_err_invalid_creds')
               : error.message
           )
         } else {
@@ -96,7 +98,7 @@ export default function LoginPage() {
         }
       }
     } catch {
-      setErrorMsg('Terjadi kesalahan koneksi.')
+      setErrorMsg(t('login_err_connection'))
     } finally {
       setLoading(false)
     }
@@ -106,12 +108,24 @@ export default function LoginPage() {
     <main className="min-h-screen bg-background text-text-primary flex flex-col justify-center items-center p-4 md:p-8 relative selection:bg-accent selection:text-white transition-colors duration-300">
       
       {/* Floating Header Controls */}
-      <div className="absolute top-4 right-4 md:top-6 md:right-8 flex items-center gap-3 z-30">
+      <div className="absolute top-4 right-4 md:top-6 md:right-8 flex items-center gap-2.5 z-30">
         <button
+          type="button"
+          onClick={() => setLocale(locale === 'id' ? 'en' : 'id')}
+          aria-label={t('login_lang_toggle')}
+          title={t('login_lang_toggle')}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-card border border-border-color text-text-secondary hover:text-text-primary hover:border-accent transition-all duration-200 cursor-pointer shadow-xs text-xs font-mono font-semibold"
+        >
+          <Languages className="w-3.5 h-3.5 text-accent" />
+          <span>{locale === 'id' ? 'EN' : 'ID'}</span>
+        </button>
+
+        <button
+          type="button"
           onClick={toggleTheme}
           aria-label="Ganti Tema"
           className="p-2.5 rounded-full bg-card border border-border-color text-text-secondary hover:text-text-primary hover:border-accent transition-all duration-200 cursor-pointer shadow-xs"
-          title={isDark ? 'Mode Terang' : 'Mode Gelap'}
+          title={isDark ? t('login_theme_light') : t('login_theme_dark')}
         >
           {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
         </button>
@@ -150,11 +164,11 @@ export default function LoginPage() {
           <div className="relative z-10 text-white space-y-4">
             <div>
               <h2 className="text-2xl font-bold tracking-tight leading-snug">
-                Membimbing Generasi Digital, <br />
-                <span className="text-white/90">Mencatat Setiap Langkah.</span>
+                {t('login_banner_headline')} <br />
+                <span className="text-white/90">{t('login_banner_subheadline')}</span>
               </h2>
               <p className="text-xs text-white/70 mt-2 leading-relaxed">
-                Platform laporan evaluasi belajar terpadu dengan asistensi AI cerdas untuk pengajar.
+                {t('login_banner_desc')}
               </p>
             </div>
 
@@ -185,10 +199,10 @@ export default function LoginPage() {
           {/* Title and Switcher */}
           <div className="mb-6">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
-              {isSignUp ? 'Buat Akun Baru' : 'Masuk ke Akun'}
+              {isSignUp ? t('login_title_signup') : t('login_title_signin')}
             </h1>
             <p className="text-xs sm:text-sm text-text-secondary mt-1.5 flex items-center gap-1.5">
-              <span>{isSignUp ? 'Sudah punya akun?' : 'Belum punya akun?'}</span>
+              <span>{isSignUp ? t('login_prompt_has_account') : t('login_prompt_no_account')}</span>
               <button
                 type="button"
                 onClick={() => {
@@ -198,7 +212,7 @@ export default function LoginPage() {
                 }}
                 className="text-accent hover:underline font-semibold cursor-pointer"
               >
-                {isSignUp ? 'Masuk di sini' : 'Daftar di sini'}
+                {isSignUp ? t('login_action_signin') : t('login_action_signup')}
               </button>
             </p>
           </div>
@@ -227,7 +241,7 @@ export default function LoginPage() {
             {googleLoading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin text-accent" />
-                <span className="font-mono text-xs uppercase tracking-wider">Menghubungkan...</span>
+                <span className="font-mono text-xs uppercase tracking-wider">{t('login_connecting')}</span>
               </>
             ) : (
               <>
@@ -237,7 +251,7 @@ export default function LoginPage() {
                   <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.03 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
                   <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.27 2.57 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                 </svg>
-                <span className="font-semibold">Lanjutkan dengan Google</span>
+                <span className="font-semibold">{t('login_google_btn')}</span>
               </>
             )}
           </button>
@@ -246,7 +260,7 @@ export default function LoginPage() {
           <div className="relative flex items-center justify-center mb-5">
             <div className="border-t border-border-color w-full"></div>
             <span className="bg-card px-3 text-[11px] uppercase font-mono text-text-secondary tracking-wider shrink-0">
-              atau dengan email
+              {t('login_divider')}
             </span>
             <div className="border-t border-border-color w-full"></div>
           </div>
@@ -255,7 +269,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-1.5 font-mono">
-                Email
+                {t('login_label_email')}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
@@ -272,7 +286,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-1.5 font-mono">
-                Password
+                {t('login_label_password')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
@@ -304,7 +318,7 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 rounded border-border-color text-accent focus:ring-accent accent-[#4da23c] cursor-pointer"
                 />
-                <span>Ingat saya di perangkat ini</span>
+                <span>{t('login_remember_me')}</span>
               </label>
             </div>
 
@@ -317,11 +331,11 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  <span>Memproses...</span>
+                  <span>{t('login_processing')}</span>
                 </>
               ) : (
                 <>
-                  <span>{isSignUp ? 'Daftar Sekarang' : 'Masuk Sekarang'}</span>
+                  <span>{isSignUp ? t('login_btn_signup') : t('login_btn_signin')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

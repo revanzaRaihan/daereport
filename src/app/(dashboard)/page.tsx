@@ -7,6 +7,7 @@ import { compressImage } from '@/lib/imageCompressor'
 import CustomSelect from '@/components/CustomSelect'
 import CustomDatePicker from '@/components/CustomDatePicker'
 import { useTranslation } from '@/components/LocaleProvider'
+import { getCachedData, setCachedData } from '@/lib/dataCache'
 import { 
   Sparkles, 
   PenTool,
@@ -21,7 +22,9 @@ import {
   Image as ImageIcon,
   Clock,
   GraduationCap,
-  X
+  X,
+  Mic,
+  MicOff
 } from 'lucide-react'
 
 export default function LaporanBuilderPage() {
@@ -30,15 +33,17 @@ export default function LaporanBuilderPage() {
   const { t, locale, setLocale } = useTranslation()
   const [userId, setUserId] = useState<string | null>(null)
   
+  const cachedStudents = getCachedData<any[]>('students')
+  const cachedDatasetCount = getCachedData<number>('dataset_count')
+  
   // Data States
-  const [students, setStudents] = useState<any[]>([])
-  const [datasetCount, setDatasetCount] = useState(0)
+  const [students, setStudents] = useState<any[]>(cachedStudents || [])
+  const [datasetCount, setDatasetCount] = useState<number>(cachedDatasetCount ?? 0)
   
   // Form Inputs
   const [selectedStudentId, setSelectedStudentId] = useState('')
   const [meetingNumber, setMeetingNumber] = useState<number>(1)
   const [reportDate, setReportDate] = useState('')
-  const [materi, setMateri] = useState('')
   const [behavior, setBehavior] = useState('')
   const [language, setLanguage] = useState<'id' | 'en'>(locale || 'id')
   const [reportType, setReportType] = useState<'full' | 'overview'>('full')
@@ -59,6 +64,95 @@ export default function LaporanBuilderPage() {
   const [meetingNumbersMap, setMeetingNumbersMap] = useState<Record<string, number>>({})
   const [nextDatesMap, setNextDatesMap] = useState<Record<string, string>>({})
 
+  // Speech-to-Text States
+  const [isRecording, setIsRecording] = useState(false)
+  const [speechSupported, setSpeechSupported] = useState(true)
+  const recognitionRef = useRef<any>(null)
+  const baseBehaviorRef = useRef<string>('')
+
+  // Check Web Speech API support
+  useEffect(() => {
+    const SpeechRecognition = typeof window !== 'undefined' && ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+    setSpeechSupported(!!SpeechRecognition)
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop()
+        } catch {}
+      }
+    }
+  }, [])
+
+  const toggleSpeechToText = () => {
+    const SpeechRecognition = typeof window !== 'undefined' && ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+    if (!SpeechRecognition) {
+      setSpeechSupported(false)
+      setStatusMsg({ type: 'error', text: t('stt_not_supported') })
+      return
+    }
+
+    if (isRecording) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop()
+        } catch (err) {
+          console.error(err)
+        }
+      }
+      setIsRecording(false)
+      return
+    }
+
+    try {
+      const recognition = new SpeechRecognition()
+      recognition.lang = language === 'en' ? 'en-US' : 'id-ID'
+      recognition.continuous = true
+      recognition.interimResults = true
+
+      baseBehaviorRef.current = behavior
+
+      recognition.onstart = () => {
+        setIsRecording(true)
+      }
+
+      recognition.onresult = (event: any) => {
+        let finalTranscript = ''
+        let interimTranscript = ''
+        for (let i = 0; i < event.results.length; ++i) {
+          const text = event.results[i][0].transcript
+          if (event.results[i].isFinal) {
+            finalTranscript += text + ' '
+          } else {
+            interimTranscript += text
+          }
+        }
+        const prefix = baseBehaviorRef.current ? baseBehaviorRef.current.trim() + ' ' : ''
+        const combined = (prefix + finalTranscript + interimTranscript).trimStart()
+        setBehavior(combined)
+      }
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error)
+        if (event.error === 'not-allowed') {
+          setStatusMsg({ type: 'error', text: t('stt_error_mic') })
+        }
+        setIsRecording(false)
+      }
+
+      recognition.onend = () => {
+        setIsRecording(false)
+      }
+
+      recognitionRef.current = recognition
+      recognition.start()
+    } catch (err) {
+      console.error('Failed to start speech recognition:', err)
+      setIsRecording(false)
+      setStatusMsg({ type: 'error', text: t('stt_error_mic') })
+    }
+  }
+
   // Load User, Sync and Fetch data
   useEffect(() => {
     const initPage = async () => {
@@ -78,9 +172,11 @@ export default function LaporanBuilderPage() {
           .select('*', { count: 'exact', head: true })
 
         setDatasetCount(count || 0)
+        setCachedData('dataset_count', count || 0)
 
         if (studentsData) {
           setStudents(studentsData)
+          setCachedData('students', studentsData)
 
           // Fetch reports to calculate next meeting numbers and dates
           const { data: reportsData } = await supabase
@@ -137,7 +233,7 @@ export default function LaporanBuilderPage() {
     if (mode === 'manual' && generatedText) {
       const student = students.find(s => s.id === selectedStudentId)
       if (student) {
-        const manualText = assembleManualReport(student, meetingNumber, reportDate, materi, behavior, val)
+        const manualText = assembleManualReport(student, meetingNumber, reportDate, behavior, val)
         setGeneratedText(manualText)
       }
     }
@@ -169,7 +265,7 @@ export default function LaporanBuilderPage() {
         return
       }
       setTimeout(() => {
-        const manualText = assembleManualReport(student, meetingNumber, reportDate, materi, behavior, language)
+        const manualText = assembleManualReport(student, meetingNumber, reportDate, behavior, language)
         setGeneratedText(manualText)
         setGenerating(false)
       }, 300)
@@ -184,7 +280,6 @@ export default function LaporanBuilderPage() {
           student_id: selectedStudentId,
           meeting_number: meetingNumber,
           report_date: reportDate,
-          materi,
           behavior,
           language,
           report_type: reportType
@@ -259,7 +354,7 @@ export default function LaporanBuilderPage() {
         subject: student.subject,
         meeting_number: meetingNumber,
         report_date: reportDate,
-        materi,
+        materi: '', // Deprecated, stored as empty string for schema compatibility
         behavior,
         content: generatedText,
         image_url: imageUrl,
@@ -283,7 +378,6 @@ export default function LaporanBuilderPage() {
 
       setStatusMsg({ type: 'success', text: 'Laporan berhasil disimpan ke riwayat.' })
 
-      setMateri('')
       setBehavior('')
       setGeneratedText('')
       setSelectedImage(null)
@@ -499,28 +593,43 @@ export default function LaporanBuilderPage() {
               </div>
             </div>
 
-            {/* Material Area */}
-            {mode === 'ai' && (
-              <div className="border border-border-color focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 rounded-xl p-4 bg-input-bg transition-all shadow-2xs hover:border-accent/40">
-                <label className="block text-[10px] font-extrabold text-text-secondary uppercase tracking-wider font-mono mb-1.5">
-                  {t('label_material')}
+            {/* Behavior Area with Speech-to-Text */}
+            <div className={`border rounded-xl p-4 bg-input-bg transition-all shadow-2xs ${
+              isRecording 
+                ? 'border-accent ring-2 ring-accent/20' 
+                : 'border-border-color focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 hover:border-accent/40'
+            }`}>
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <label className="block text-[10px] font-extrabold text-text-secondary uppercase tracking-wider font-mono">
+                  {t('label_behavior')}
                 </label>
-                <textarea
-                  required={mode === 'ai'}
-                  rows={3}
-                  value={materi}
-                  onChange={(e) => setMateri(e.target.value)}
-                  placeholder={t('placeholder_material')}
-                  className="w-full bg-transparent border-0 p-0 text-xs text-text-primary leading-relaxed focus:ring-0 focus:outline-none resize-y min-h-[70px] placeholder:text-text-secondary/50 font-medium"
-                />
+                
+                {speechSupported && (
+                  <button
+                    type="button"
+                    onClick={toggleSpeechToText}
+                    title={isRecording ? t('btn_stop_stt') : t('btn_start_stt')}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                      isRecording
+                        ? 'bg-rose-500 text-white animate-pulse shadow-xs'
+                        : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    {isRecording ? (
+                      <>
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                        <MicOff className="w-3 h-3" />
+                        <span>{t('stt_listening')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="w-3 h-3 text-accent" />
+                        <span>{t('btn_start_stt')}</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
-            )}
-
-            {/* Behavior Area */}
-            <div className="border border-border-color focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 rounded-xl p-4 bg-input-bg transition-all shadow-2xs hover:border-accent/40">
-                <label className="block text-[10px] font-extrabold text-text-secondary uppercase tracking-wider font-mono mb-1.5">
-                {t('label_behavior')}
-              </label>
               <textarea
                 required
                 rows={3}
@@ -529,6 +638,12 @@ export default function LaporanBuilderPage() {
                 placeholder={t('placeholder_behavior')}
                 className="w-full bg-transparent border-0 p-0 text-xs text-text-primary leading-relaxed focus:ring-0 focus:outline-none resize-y min-h-[70px] placeholder:text-text-secondary/50 font-medium"
               />
+              {isRecording && (
+                <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border-color text-[11px] text-rose-500 font-mono font-semibold animate-pulse">
+                  <span className="w-2 h-2 rounded-full bg-rose-500" />
+                  <span>{language === 'en' ? 'Listening in English... Speak clearly into your microphone' : 'Mendengarkan dalam Bahasa Indonesia... Silakan bicara'}</span>
+                </div>
+              )}
             </div>
 
             {/* Optional Image Upload */}
@@ -737,7 +852,6 @@ function assembleManualReport(
   student: { name: string; subject: string },
   meetingNumber: number,
   date: string,
-  materi: string,
   behavior: string,
   language: 'id' | 'en' = 'id'
 ): string {

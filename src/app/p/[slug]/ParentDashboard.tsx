@@ -18,7 +18,8 @@ import {
   GraduationCap,
   History,
   MessageCircle,
-  FileText
+  FileText,
+  Camera
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 
@@ -409,22 +410,6 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                           </span>
                         </div>
 
-                        {/* Materi Pembelajaran */}
-                        <div className="space-y-2 relative z-10">
-                          <div className="flex items-center gap-2 text-xs font-black text-emerald-950 uppercase tracking-wider font-[var(--font-rounded,sans-serif)]">
-                            <BookOpen className="w-4 h-4 text-[#4da23c] shrink-0" />
-                            <span>Materi yang Dipelajari:</span>
-                          </div>
-                          <div className="bg-white border-2 border-emerald-100 rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 shadow-xs flex items-center justify-between gap-3">
-                            <span className="text-base sm:text-lg font-black text-neutral-900 font-[var(--font-rounded,sans-serif)] whitespace-nowrap truncate">
-                              {cleanMateri(latestReport.materi || latestReport.lessonCompleted)}
-                            </span>
-                            <span className="px-3 py-1 bg-emerald-50 text-emerald-800 text-xs font-black rounded-full border border-emerald-200 font-[var(--font-rounded,sans-serif)] whitespace-nowrap shrink-0">
-                              Selesai
-                            </span>
-                          </div>
-                        </div>
-
                         {/* Evaluasi Belajar Guru */}
                         <div className="space-y-2.5 relative z-10">
                           <div className="flex items-center justify-between gap-2">
@@ -531,7 +516,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
 
                     {reports.length > 0 ? (
                       <div className="space-y-4">
-                        <div className="border-2 border-neutral-200/90 rounded-3xl bg-white overflow-hidden divide-y divide-neutral-100 shadow-xs">
+                        <div className="border-2 border-emerald-200/90 rounded-3xl bg-[#ffffff] overflow-hidden divide-y divide-emerald-100/70 shadow-sm">
                           {currentHistoryReports.map((report) => {
                             const isExpanded = expandedReportId === report.id
 
@@ -541,7 +526,9 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                                 {/* Accordion Trigger */}
                                 <div 
                                   onClick={() => setExpandedReportId(isExpanded ? null : report.id)}
-                                  className="flex items-center justify-between p-3.5 sm:p-5 cursor-pointer hover:bg-emerald-50/50 select-none transition-colors gap-2"
+                                  className={`flex items-center justify-between p-3.5 sm:p-5 cursor-pointer select-none transition-colors gap-2 ${
+                                    isExpanded ? 'bg-emerald-50/60' : 'bg-[#ffffff] hover:bg-emerald-50/40'
+                                  }`}
                                 >
                                   <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
                                     <span className="px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-xs font-black font-[var(--font-rounded,sans-serif)] shrink-0 whitespace-nowrap">
@@ -549,7 +536,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                                     </span>
                                     <div className="flex flex-col min-w-0">
                                       <span className="text-xs sm:text-sm font-bold text-neutral-800 truncate">
-                                        {cleanMateri(report.materi || report.lessonCompleted)}
+                                        {report.materi ? cleanMateri(report.materi) : `${student.subject} — Sesi #${report.meeting_number}`}
                                       </span>
                                       <span className="text-xs text-neutral-400 font-semibold flex items-center gap-1 whitespace-nowrap shrink-0 mt-0.5">
                                         <Calendar className="w-3.5 h-3.5" />
@@ -569,7 +556,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
 
                                 {/* Accordion Body */}
                                 {isExpanded && (
-                                  <div className="p-4 sm:p-6 border-t border-emerald-100 bg-emerald-50/30 space-y-4">
+                                  <div className="p-4 sm:p-6 border-t-2 border-emerald-100/80 bg-[#F9FAF8] space-y-4">
                                     
                                     <div className="flex justify-between items-center">
                                       <span className="text-xs font-black uppercase text-emerald-950 tracking-wider font-[var(--font-rounded,sans-serif)]">
@@ -580,7 +567,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                                           e.stopPropagation()
                                           handleCopyText(report.teachersNote, report.id)
                                         }}
-                                        className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-950 cursor-pointer bg-white px-2.5 py-1 rounded-full border border-emerald-200"
+                                        className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-950 cursor-pointer bg-[#ffffff] px-2.5 py-1 rounded-full border border-emerald-200 hover:bg-emerald-50 shadow-2xs transition-colors"
                                       >
                                         {copiedReportId === report.id ? (
                                           <>
@@ -596,19 +583,39 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                                       </button>
                                     </div>
 
-                                    <div className="bg-white border border-emerald-100 p-4 sm:p-5 rounded-2xl text-neutral-800 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-medium shadow-2xs">
+                                    <div className="bg-[#ffffff] border-2 border-emerald-200/80 p-4 sm:p-5 rounded-2xl text-neutral-800 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-medium shadow-2xs">
                                       {report.teachersNote}
                                     </div>
 
                                     {report.image_url && (
-                                      <div className="pt-2">
-                                        <button
+                                      <div className="pt-2 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-1.5 text-xs font-black uppercase text-emerald-950 tracking-wider font-[var(--font-rounded,sans-serif)]">
+                                            <Camera className="w-3.5 h-3.5 text-[#4da23c]" />
+                                            <span>Foto Dokumentasi Sesi #{report.meeting_number}:</span>
+                                          </div>
+                                          <span className="text-[11px] text-neutral-400 font-bold">
+                                            Klik untuk memperbesar
+                                          </span>
+                                        </div>
+
+                                        <div 
                                           onClick={() => setPhotoPreview(report.image_url)}
-                                          className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 hover:text-emerald-950 cursor-pointer bg-white px-3 py-1.5 rounded-full border border-emerald-200 shadow-2xs"
+                                          className="rounded-2xl overflow-hidden border-2 border-emerald-200/90 bg-neutral-100 aspect-video relative group cursor-pointer shadow-xs max-w-lg"
                                         >
-                                          <Maximize2 className="w-3.5 h-3.5" />
-                                          <span>Lihat Foto Pertemuan #{report.meeting_number}</span>
-                                        </button>
+                                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                                          <img 
+                                            src={report.image_url} 
+                                            alt={`Dokumentasi Pertemuan #${report.meeting_number}`} 
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                          />
+                                          <div className="absolute inset-0 bg-emerald-950/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <span className="bg-white/95 text-emerald-950 px-3.5 py-1.5 rounded-full text-xs font-black shadow-md flex items-center gap-1.5 font-[var(--font-rounded,sans-serif)]">
+                                              <Maximize2 className="w-3.5 h-3.5" />
+                                              Buka Foto Penuh
+                                            </span>
+                                          </div>
+                                        </div>
                                       </div>
                                     )}
 
@@ -634,7 +641,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                                   setExpandedReportId(null)
                                 }}
                                 disabled={historyPage === 1}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-neutral-200 bg-white text-xs font-bold text-neutral-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-[#4da23c] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-neutral-200 disabled:hover:text-neutral-700 transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-neutral-200 bg-[#ffffff] text-xs font-bold text-neutral-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-[#4da23c] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#ffffff] disabled:hover:border-neutral-200 disabled:hover:text-neutral-700 transition-colors cursor-pointer shadow-2xs"
                                 title="Halaman Sebelumnya"
                               >
                                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -662,7 +669,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                                       className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer font-[var(--font-rounded,sans-serif)] ${
                                         historyPage === pageNum
                                           ? 'bg-[#4da23c] text-white shadow-xs'
-                                          : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-emerald-50 hover:border-emerald-300 hover:text-[#4da23c]'
+                                          : 'bg-[#ffffff] border border-neutral-200 text-neutral-600 hover:bg-emerald-50 hover:border-emerald-300 hover:text-[#4da23c] shadow-2xs'
                                       }`}
                                     >
                                       {pageNum}
@@ -677,7 +684,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                                   setExpandedReportId(null)
                                 }}
                                 disabled={historyPage === totalHistoryPages}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-neutral-200 bg-white text-xs font-bold text-neutral-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-[#4da23c] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-neutral-200 disabled:hover:text-neutral-700 transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-neutral-200 bg-[#ffffff] text-xs font-bold text-neutral-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-[#4da23c] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#ffffff] disabled:hover:border-neutral-200 disabled:hover:text-neutral-700 transition-colors cursor-pointer shadow-2xs"
                                 title="Halaman Berikutnya"
                               >
                                 <span className="hidden sm:inline">Berikutnya</span>
@@ -697,7 +704,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
               </div>
 
               {/* ============================================================== */}
-              {/* KOLOM 2: Catatan Pembelajaran dengan Kolom Masukan untuk Guru   */}
+              {/* KOLOM 2: Catatan Pembelajaran & Masukan untuk Guru             */}
               {/* ============================================================== */}
               <div className="space-y-6 w-full">
                 
@@ -808,7 +815,7 @@ export default function ParentDashboard({ student, reports }: ParentDashboardPro
                           onChange={(e) => setFeedbackText(e.target.value)}
                           placeholder="Tulis pesan untuk guru..."
                           required
-                          className="w-full bg-white text-xs sm:text-sm text-neutral-800 placeholder-neutral-400 py-2.5 pl-3.5 pr-20 rounded-xl border-2 border-emerald-200 focus:outline-none focus:border-[#4da23c] focus:ring-2 focus:ring-[#4da23c]/20 transition-all font-medium"
+                          className="w-full bg-[#ffffff] text-xs sm:text-sm text-neutral-800 placeholder-neutral-400 py-2.5 pl-3.5 pr-20 rounded-xl border-2 border-emerald-200 focus:outline-none focus:border-[#4da23c] focus:ring-2 focus:ring-[#4da23c]/20 transition-all font-medium shadow-2xs"
                         />
                         <button
                           type="submit"

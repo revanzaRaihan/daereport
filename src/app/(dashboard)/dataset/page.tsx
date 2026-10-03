@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client'
 import CustomSelect from '@/components/CustomSelect'
 import { useTranslation } from '@/components/LocaleProvider'
 import { useConfirm } from '@/components/ConfirmProvider'
+import { getCachedData, setCachedData } from '@/lib/dataCache'
 import { 
   BookOpen, 
   Plus, 
@@ -38,15 +39,18 @@ export default function DatasetPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'styles' | 'recommendations'>('styles')
 
+  const cachedStyles = getCachedData<any[]>('dataset_styles')
+  const cachedRecs = getCachedData<any[]>('dataset_recs')
+
   // Loaders & Alerts
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cachedStyles && !cachedRecs)
   const [submitting, setSubmitting] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
 
   // Data States
-  const [styles, setStyles] = useState<any[]>([])
-  const [recommendations, setRecommendations] = useState<any[]>([])
+  const [styles, setStyles] = useState<any[]>(cachedStyles || [])
+  const [recommendations, setRecommendations] = useState<any[]>(cachedRecs || [])
 
   // Filters
   const [filterLang, setFilterLang] = useState<'id' | 'en'>('id')
@@ -64,7 +68,9 @@ export default function DatasetPage() {
   const [recBody, setRecBody] = useState('')
 
   const fetchData = async () => {
-    setLoading(true)
+    if (!styles.length && !recommendations.length) {
+      setLoading(true)
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
@@ -76,7 +82,10 @@ export default function DatasetPage() {
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
-        setStyles(stylesData || [])
+        if (stylesData) {
+          setStyles(stylesData)
+          setCachedData('dataset_styles', stylesData)
+        }
 
         // 2. Fetch Recommendations
         const { data: recData } = await supabase
@@ -84,7 +93,10 @@ export default function DatasetPage() {
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
-        setRecommendations(recData || [])
+        if (recData) {
+          setRecommendations(recData)
+          setCachedData('dataset_recs', recData)
+        }
       }
     } catch (e) {
       console.error(e)

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTranslation } from '@/components/LocaleProvider'
 import { useConfirm } from '@/components/ConfirmProvider'
+import { getCachedData, setCachedData } from '@/lib/dataCache'
 import { 
   Inbox, 
   Trash2, 
@@ -21,13 +22,16 @@ export default function InboxPage() {
   const supabase = createClient()
   const { t, locale } = useTranslation()
   const { confirm } = useConfirm()
-  const [feedbacks, setFeedbacks] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const cachedFeedbacks = getCachedData<any[]>('feedbacks')
+  const [feedbacks, setFeedbacks] = useState<any[]>(cachedFeedbacks || [])
+  const [loading, setLoading] = useState(!cachedFeedbacks)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
 
   const fetchFeedbacks = async () => {
-    setLoading(true)
+    if (!feedbacks.length) {
+      setLoading(true)
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
@@ -45,7 +49,10 @@ export default function InboxPage() {
         const { data, error } = await query
 
         if (error) throw error
-        setFeedbacks(data || [])
+        if (data) {
+          setFeedbacks(data)
+          setCachedData('feedbacks', data)
+        }
 
         const unread = data?.filter((f: any) => !f.is_read) || []
         if (unread.length > 0) {

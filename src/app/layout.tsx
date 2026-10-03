@@ -5,6 +5,7 @@ import LocaleProvider from "@/components/LocaleProvider";
 import ThemeProvider from "@/components/ThemeProvider";
 import LenisProvider from "@/components/LenisProvider";
 import ConfirmProvider from "@/components/ConfirmProvider";
+import NavigationProgressProvider from "@/components/NavigationProgress";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -44,9 +45,11 @@ export default function RootLayout({
         <LocaleProvider>
           <ThemeProvider>
             <ConfirmProvider>
-              <LenisProvider>
-                {children}
-              </LenisProvider>
+              <NavigationProgressProvider>
+                <LenisProvider>
+                  {children}
+                </LenisProvider>
+              </NavigationProgressProvider>
             </ConfirmProvider>
           </ThemeProvider>
         </LocaleProvider>

@@ -147,12 +147,13 @@ function isValidReport(sections: ReportSections): boolean {
 
 export async function classifyCategory(
   behavior: string,
-  materi: string,
+  materi: string = '',
   provider: string,
   apiKey: string,
   model: string
 ): Promise<string> {
-  const prompt = `Klasifikasikan materi dan behavior berikut ke dalam salah satu kategori: kreativitas, logika_terstruktur, eksperimen, coding_dasar.\n\nMateri: ${materi}\nBehavior: ${behavior}\n\nKembalikan HANYA JSON dengan key 'category' dan value nama kategori tersebut (contoh: {"category": "logika_terstruktur"}). Jangan ada penjelasan lain.`
+  const contentToClassify = materi ? `Materi: ${materi}\nBehavior: ${behavior}` : `Observasi & Perkembangan Siswa: ${behavior}`
+  const prompt = `Klasifikasikan data observasi dan perkembangan siswa berikut ke dalam salah satu kategori: kreativitas, logika_terstruktur, eksperimen, coding_dasar.\n\n${contentToClassify}\n\nKembalikan HANYA JSON dengan key 'category' dan value nama kategori tersebut (contoh: {"category": "logika_terstruktur"}). Jangan ada penjelasan lain.`
 
   if (!apiKey) return 'coding_dasar'
 
